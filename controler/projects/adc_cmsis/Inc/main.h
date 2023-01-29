@@ -9,6 +9,10 @@
 #define MAIN_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
 #include "stm32f1xx.h"
 #include "inits.h"
 
@@ -20,12 +24,15 @@
 #define s16		int16_t
 #define s32		int32_t
 
-#define ARR_SIZE 	1024
-#define VDRAIN		3300
-#define DEL_VAL		2000
+#define ARR_SIZE 		4096
+#define VDRAIN			3300
+#define DEL_VAL			2000
+#define MAX_STR_SIZE	128
 
 void delay(u32 del_val);
 u16 read_adc(void);
+void tx_str(char *str);
+void tx_char(char ch);
 
 
 #endif /* MAIN_H_ */

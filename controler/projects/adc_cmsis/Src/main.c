@@ -3,30 +3,53 @@
  * TODO:
  *
  * 1. add DMA on channel 0 ADC1
- * 2. add output to uart
+ * ---2. add output to uart
  * 3. add ADC for pots
  * 4. create protected while
  * 5. create timer for delays and protected delays
  */
 
+/*
+ * По теореме котельникова:
+ * Если хотим различать частоты до 20кГц
+ * должны опрашивать с частотой 40кГц
+ */
 
-int main(void)
+u8 com_receive;
+//u8 rx_buf[MAX_STR_SIZE];
+
+/**
+  * @brief  Передача строки по USART2 без DMA
+  * @param  *str - указатель на строку
+  * @retval None
+  */
+void tx_str(char *str)
 {
-	init_clk();
-	init_adc();
+	u16 i;								//добавляем символ конца строки
 
-	u16 volts[ARR_SIZE] = { 0 };
-
-    while (1)
-    {
-    	for (u8 i = 0; i < ARR_SIZE; i++)
-    	{
-    		volts[i] = (read_adc() * VDRAIN) >> 12;;
-    		delay(DEL_VAL);
-    	}
-    }
+	for (i = 0; i < strlen((char*)str); i++)
+	{
+		USART2->DR = str[i];								//передаём байт данных
+		while ((USART2->SR & USART_SR_TC) == 0) {};			//ждём окончания передачи
+	}
 }
 
+/**
+  * @brief  Передача символа по USART2 без DMA
+  * @param  ch - символ для передачи
+  * @retval None
+  */
+void tx_char(char ch)
+{
+	USART2->DR = ch;
+	while ((USART2->SR & USART_SR_TC) == 0) {};
+}
+
+/**
+  * @brief  Считывание значения ацп
+  * @param  None
+  * @retval Значение АЦП
+  */
 u16 read_adc(void)
 {
 	ADC1->CR2 |= ADC_CR2_SWSTART;
@@ -35,9 +58,77 @@ u16 read_adc(void)
 	return ADC1->DR;
 }
 
+
+/**
+  * @brief  Обработчик прерывания по UART
+  * @param  None
+  * @retval None
+  * cannot copy paste to terminal
+  * space symbol is terminator
+  */
+void USART2_IRQHandler(void)
+{
+	if ((USART2->SR & USART_SR_RXNE)!=0)		//Прерывание по приёму данных?
+	{
+		//u8 pos = strlen((char*)rx_buf);			//Вычисляем позицию свободной ячейки
+		u8 ch = 0;
+		//rx_buf[pos] = USART2->DR; 			//Считываем содержимое регистра данных
+		//tx_char(rx_buf[pos]);
+		ch = USART2->DR;
+		tx_char(ch);
+
+		if (isspace(ch))							//Если это символ конца строки
+		{
+//			if (rx_buf[pos] == '\r')
+//			{
+//				rx_buf[pos + 1] = '\n';
+//				tx_char('\n');
+//			}
+			com_receive = 1;					//- выставляем флаг приёма строки
+			return;								//- и выходим
+		}
+	}
+}
+
+int main(void)
+{
+	init_clk();
+	init_adc();
+	init_usart2();
+
+	u16 volts[ARR_SIZE] = { 0 };
+
+	char tx_buf[MAX_STR_SIZE] = { 0 };
+	//memset(rx_buf, 0, MAX_STR_SIZE);
+
+	com_receive = 0;
+
+    while (1)
+    {
+
+    	tx_str("Start_measrumrnts\r\n");
+    	for (u16 i = 0; i < ARR_SIZE; i++)
+    		volts[i] = read_adc();
+    	tx_str("Finish_mesrument\r\n");
+    	while ( !com_receive) {};
+    	com_receive = 0;
+    	tx_char('\r');
+    	for (u16 i = 0; i < ARR_SIZE; i++)
+    	{
+    		sprintf(tx_buf, "%d\r\n", volts[i]);
+    		tx_str(tx_buf);
+    	}
+    }
+}
+
+
+/**
+  * @brief  Задержка по попугаям
+  * @param  del_val значение задержки в попугаях
+  * @retval None
+  */
 void delay(u32 del_val)
 {
 	while (del_val)
 		del_val -= 1;
 }
-

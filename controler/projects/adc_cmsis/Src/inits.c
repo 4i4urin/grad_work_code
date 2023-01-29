@@ -6,6 +6,40 @@
  */
 #include "inits.h"
 
+/**
+  * @brief  Инициализация USART2
+  * @param  None
+  * @retval None
+  */
+void init_usart2(void)
+{
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;						//включить тактирование альтернативных ф-ций портов
+	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;					//включить тактирование UART2
+
+	GPIOA->CRL &= ~(GPIO_CRL_MODE2 | GPIO_CRL_CNF2);		//PA2 на выход
+	GPIOA->CRL |= (GPIO_CRL_MODE2_1 | GPIO_CRL_CNF2_1);
+
+	GPIOA->CRL &= ~(GPIO_CRL_MODE3 | GPIO_CRL_CNF3);		//PA3 - вход
+	GPIOA->CRL |= GPIO_CRL_CNF3_0;
+
+	/*****************************************
+	Скорость передачи данных - 115200
+	Частота шины APB1 - 32МГц
+	1. USARTDIV = 32'000'000/(16*115200) = 17.4
+	2. 17 = 0x11
+	3. 16*0.4 = 6
+	4. Итого 0x116
+	*****************************************/
+	USART2->BRR = 0x116;
+
+	USART2->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
+	USART2->CR1 |= USART_CR1_RXNEIE;						//разрешить прерывание по приему байта данных
+
+	NVIC_EnableIRQ(USART2_IRQn);
+}
+
+
 void init_adc(void)
 {
 	// PA0 ADC1 in0
@@ -18,7 +52,7 @@ void init_adc(void)
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
 
 	ADC1->SMPR2 &= ~(ADC_SMPR2_SMP0); // 000
-	ADC1->SMPR2 |= ADC_SMPR2_SMP0_2 | ADC_SMPR2_SMP0_1; // 110 - sample time = 71,5 cycles
+	ADC1->SMPR2 |= ADC_SMPR2_SMP0_2 | ADC_SMPR2_SMP0_1 | ADC_SMPR2_SMP0_0; // 111 - sample time = 239,5 cycles
 
 	ADC1->SQR1  &= ~(ADC_SQR1_L); 	// 1 conversion  // if was 0010 would be 3 conversion (require 3 channels)
 	ADC1->SQR3  &= ~(ADC_SQR3_SQ1); // 0 channel is first conversion in regular

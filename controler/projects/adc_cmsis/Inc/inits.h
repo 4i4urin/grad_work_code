@@ -14,6 +14,7 @@
 
 void init_adc(void);
 void init_clk(void);
+void init_usart2(void);
 
 
 
