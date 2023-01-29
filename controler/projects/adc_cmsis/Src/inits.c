@@ -6,6 +6,22 @@
  */
 #include "inits.h"
 
+
+void init_tim4(void)
+{
+	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+
+	TIM4->PSC = TIM4_PSC - 1; // timer period 1 MHz
+	TIM4->DIER |= TIM_DIER_UIE; // enable interrupts by update
+	TIM4->CNT = 0;
+	TIM4->ARR = 0;
+
+//	TIM4->CR1 |= TIM_CR1_CEN;
+
+	NVIC_EnableIRQ(TIM4_IRQn);				//Рарзрешить прерывание от TIM2
+	NVIC_SetPriority(TIM4_IRQn, 1);			//Выставляем приоритет
+}
+
 /**
   * @brief  Инициализация USART2
   * @param  None
@@ -57,6 +73,10 @@ void init_adc(void)
 	ADC1->SQR1  &= ~(ADC_SQR1_L); 	// 1 conversion  // if was 0010 would be 3 conversion (require 3 channels)
 	ADC1->SQR3  &= ~(ADC_SQR3_SQ1); // 0 channel is first conversion in regular
 
+
+	ADC1->CR2 |= ADC_CR2_CONT; // continuous mode //as fast as can
+	ADC1->CR1 &= ~(ADC_CR1_SCAN); // no scan mode
+
 	ADC1->CR2 |= ADC_CR2_ADON; // turn on adc
 
 	// calibration
@@ -64,11 +84,10 @@ void init_adc(void)
 	ADC1->CR2 |= ADC_CR2_CAL; // start calibration
 	while (ADC1->CR2 & ADC_CR2_CAL) ;// wait finish of calibration
 
-	ADC1->CR2 &= ~(ADC_CR2_CONT); // no continuous mode
-	ADC1->CR1 &= ~(ADC_CR1_SCAN); // no scan mode
 
 	ADC1->CR2 |= ADC_CR2_EXTTRIG; // enable conversion on external event
-	ADC1->CR2 |= ADC_CR2_EXTSEL;  // SWSTART
+	ADC1->CR2 |= ADC_CR2_EXTSEL;  // turn on by SWSTART
+	ADC1->CR2 |= ADC_CR2_SWSTART; // turn on
 }
 
 

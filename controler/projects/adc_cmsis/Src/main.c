@@ -17,6 +17,7 @@
 
 u8 com_receive;
 //u8 rx_buf[MAX_STR_SIZE];
+u8 make_adc;
 
 /**
   * @brief  Передача строки по USART2 без DMA
@@ -52,9 +53,10 @@ void tx_char(char ch)
   */
 u16 read_adc(void)
 {
-	ADC1->CR2 |= ADC_CR2_SWSTART;
-	while ( !(ADC1->SR & ADC_SR_EOC) ) // wait finish of conversion
-		;
+//	ADC1->CR2 |= ADC_CR2_SWSTART;
+//	while ( !(ADC1->SR & ADC_SR_EOC) ) // wait finish of conversion
+//		;
+	// because of continuous mode
 	return ADC1->DR;
 }
 
@@ -90,13 +92,29 @@ void USART2_IRQHandler(void)
 	}
 }
 
+void TIM4_IRQHandler()
+{
+	TIM4->SR &= ~TIM_SR_UIF; // drop update flag
+	make_adc = 1;
+}
+
+void start_tim4_khz(u16 kHz)
+{
+	TIM4->ARR = TIM4_FREQ / (kHz * 1000); // set freq
+	START_TIM4();
+}
+
+
 int main(void)
 {
 	init_clk();
 	init_adc();
 	init_usart2();
+	init_tim4();
 
-	u16 volts[ARR_SIZE] = { 0 };
+	u16 some_arr[ARR_SIZE] = { 0 };
+	u16* volts = some_arr;
+	make_adc = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
 	//memset(rx_buf, 0, MAX_STR_SIZE);
@@ -107,8 +125,7 @@ int main(void)
     {
 
     	tx_str("Start_measrumrnts\r\n");
-    	for (u16 i = 0; i < ARR_SIZE; i++)
-    		volts[i] = read_adc();
+    	volts = make_meas(volts, ARR_SIZE, 40);
     	tx_str("Finish_mesrument\r\n");
     	while ( !com_receive) {};
     	com_receive = 0;
@@ -121,6 +138,18 @@ int main(void)
     }
 }
 
+u16* make_meas(u16* parr, u16 size, u16 kHz)
+{
+	start_tim4_khz(kHz);
+	for(u16 i = 0; i < size; i++)
+	{
+		while ( !make_adc) {};
+		parr[i] = read_adc();
+		make_adc = 0;
+	}
+	STOP_TIM4();
+	return parr;
+}
 
 /**
   * @brief  Задержка по попугаям

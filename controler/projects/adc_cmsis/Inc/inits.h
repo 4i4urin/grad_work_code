@@ -10,11 +10,13 @@
 
 #include "main.h"
 
-#define DEL_ADC 100
+#define DEL_ADC 	100
+#define TIM4_PSC 	MCU_FREQ / TIM4_FREQ
 
 void init_adc(void);
 void init_clk(void);
 void init_usart2(void);
+void init_tim4(void);
 
 
 
