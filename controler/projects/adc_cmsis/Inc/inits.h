@@ -2,7 +2,7 @@
  * inits.h
  *
  *  Created on: Jan 28, 2023
- *      Author: Саня
+ *      Author: shishel
  */
 
 #ifndef INITS_H_
@@ -17,6 +17,7 @@ void init_adc(void);
 void init_clk(void);
 void init_usart2(void);
 void init_tim4(void);
+void init_spi(void);
 
 
 

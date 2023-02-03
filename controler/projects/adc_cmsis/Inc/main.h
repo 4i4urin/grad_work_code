@@ -41,6 +41,7 @@ void tx_str(char *str);
 void tx_char(char ch);
 void start_tim4_khz(u16 kHz);
 u16* make_meas(u16* parr, u16 size, u16 khz);
+void spi1_write(u8 data);
 
 
 #endif /* MAIN_H_ */

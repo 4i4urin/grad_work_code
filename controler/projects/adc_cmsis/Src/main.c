@@ -104,6 +104,12 @@ void start_tim4_khz(u16 kHz)
 	START_TIM4();
 }
 
+void spi1_write(u8 data)
+{
+	SPI1->DR = data;
+	while ( !(SPI1->SR & SPI_SR_TXE) ) { };
+}
+
 
 int main(void)
 {
@@ -111,6 +117,7 @@ int main(void)
 	init_adc();
 	init_usart2();
 	init_tim4();
+	init_spi();
 
 	u16 some_arr[ARR_SIZE] = { 0 };
 	u16* volts = some_arr;
@@ -141,10 +148,13 @@ int main(void)
 u16* make_meas(u16* parr, u16 size, u16 kHz)
 {
 	start_tim4_khz(kHz);
+	spi1_write(0x01);
 	for(u16 i = 0; i < size; i++)
 	{
 		while ( !make_adc) {};
 		parr[i] = read_adc();
+		if (i == size / 2)
+			spi1_write(0xFA);
 		make_adc = 0;
 	}
 	STOP_TIM4();
