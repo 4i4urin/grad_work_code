@@ -36,9 +36,13 @@ void init_spi(void)
 	GPIOA->CRL &= ~(GPIO_CRL_CNF5);
 	GPIOA->CRL |= GPIO_CRL_CNF5_1;
 
-	GPIOA->CRL |= GPIO_CRL_MODE6; // init PB4 50 Mhz, alt func push pull
-	GPIOA->CRL &= ~(GPIO_CRL_CNF6);
-	GPIOA->CRL |= GPIO_CRL_CNF6_1;
+//	GPIOA->CRL |= GPIO_CRL_MODE6; // init PB4 50 Mhz, alt func push pull
+//	GPIOA->CRL &= ~(GPIO_CRL_CNF6);
+//	GPIOA->CRL |= GPIO_CRL_CNF6_1;
+
+	GPIOA->CRL |= GPIO_CRL_MODE6;
+	GPIOA->CRL &= ~(GPIO_CRL_CNF6); // general purpose
+
 
 	GPIOA->CRL |= GPIO_CRL_MODE7; // init PB5 50 Mhz, alt func push pull
 	GPIOA->CRL &= ~(GPIO_CRL_CNF7);
@@ -48,14 +52,16 @@ void init_spi(void)
 
 	SPI1->CR1 |= SPI_CR1_LSBFIRST; // LSB
 	SPI1->CR1 &= ~(SPI_CR1_BR);
-	SPI1->CR1 |= SPI_CR1_BR_1; // 010 = f MCU / 8 = 8Mhz
+	SPI1->CR1 |= SPI_CR1_BR_1 | SPI_CR1_BR_2; // 010 = f MCU / 8 = 8Mhz
 	SPI1->CR1 |= SPI_CR1_MSTR; // master mode
 	SPI1->CR1 |= SPI_CR1_CPOL; // idel is 1
 //	SPI1->CR1 |= SPI_CR1_BIDIMODE; // transmit only mode
 	SPI1->CR1 |= SPI_CR1_CPHA;
 	SPI1->CR1 &= ~(SPI_CR1_DFF);
+	SPI1->CR1 |= SPI_CR1_DFF; // 16 bit to send
 
 	SPI1->CR1 |= SPI_CR1_SPE; // turn on spi
+	ON_PA6();// turn CS to high
 }
 
 

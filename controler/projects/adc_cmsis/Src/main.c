@@ -104,10 +104,31 @@ void start_tim4_khz(u16 kHz)
 	START_TIM4();
 }
 
-void spi1_write(u8 data)
+u8 reverse(u8 byte)
 {
-	SPI1->DR = data;
+	byte = ( ((byte & 0xaa) >> 1) | ((byte & 0x55) << 1) );
+	byte = ( ((byte & 0xcc) >> 2) | ((byte & 0x33) << 2) );
+	return ((byte >> 4) | (byte << 4));
+}
+
+void send_dpot(u8 res_byte)
+{
+	t_dpot_send msg;
+	msg.hdr.comm = E_DPOT_COM_WRITE;
+	msg.hdr.ch_select = 0x03;
+	msg.hdr.db_1 = 0x03;
+	msg.hdr.db_2 = 0x00;
+	msg.data = reverse(res_byte);
+	spi1_write((u16*)&msg);
+}
+
+void spi1_write(u16* pdata)
+{
+	OFF_PA6();
+	SPI1->DR =  *pdata;
 	while ( !(SPI1->SR & SPI_SR_TXE) ) { };
+	while ( SPI1->SR & SPI_SR_BSY) { };
+	ON_PA6();
 }
 
 
@@ -119,23 +140,23 @@ int main(void)
 	init_tim4();
 	init_spi();
 
+	delay(10000000);
 	u16 some_arr[ARR_SIZE] = { 0 };
 	u16* volts = some_arr;
 	make_adc = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
-	//memset(rx_buf, 0, MAX_STR_SIZE);
 
 	com_receive = 0;
 
     while (1)
     {
-
     	tx_str("Start_measrumrnts\r\n");
-    	volts = make_meas(volts, ARR_SIZE, 40);
+    	volts = make_meas_adc(volts, ARR_SIZE, 40);
     	tx_str("Finish_mesrument\r\n");
-    	while ( !com_receive) {};
-    	com_receive = 0;
+
+    	wait_com_uart();
+
     	tx_char('\r');
     	for (u16 i = 0; i < ARR_SIZE; i++)
     	{
@@ -145,16 +166,19 @@ int main(void)
     }
 }
 
-u16* make_meas(u16* parr, u16 size, u16 kHz)
+void wait_com_uart(void)
+{
+	while ( !com_receive) {};
+	com_receive = 0;
+}
+
+u16* make_meas_adc(u16* parr, u16 size, u16 kHz)
 {
 	start_tim4_khz(kHz);
-	spi1_write(0x01);
 	for(u16 i = 0; i < size; i++)
 	{
 		while ( !make_adc) {};
 		parr[i] = read_adc();
-		if (i == size / 2)
-			spi1_write(0xFA);
 		make_adc = 0;
 	}
 	STOP_TIM4();

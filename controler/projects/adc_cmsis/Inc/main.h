@@ -35,13 +35,46 @@
 #define START_TIM4()	TIM4->CR1 |= TIM_CR1_CEN;
 #define STOP_TIM4() 	TIM4->CR1 &= ~(TIM_CR1_CEN)
 
+#define ON_PA6()		GPIOA->BSRR = GPIO_BSRR_BS6;
+#define OFF_PA6()		GPIOA->BSRR = GPIO_BSRR_BR6;
+
 void delay(u32 del_val);
 u16 read_adc(void);
 void tx_str(char *str);
 void tx_char(char ch);
 void start_tim4_khz(u16 kHz);
-u16* make_meas(u16* parr, u16 size, u16 khz);
-void spi1_write(u8 data);
+u16* make_meas_adc(u16* parr, u16 size, u16 khz);
 
+void spi1_write(u16* pdata);
+void send_dpot(u8 res_byte);
+u8 reverse(u8 byte);
+
+void wait_com_uart(void);
+
+#pragma pack(push, 1)
+// spi transmit data strct
+typedef enum _e_dpot_comm
+{
+	E_DPOT_COM_NONE = 0x00,
+	E_DPOT_COM_SHUTD = 0x01,
+	E_DPOT_COM_WRITE = 0x02,
+	E_DPOT_COM_NONE_2 = 0x03
+} e_dpot_comm;
+
+typedef struct _t_dpot_hdr
+{
+	u8 		 	    db_1 : 2; // don't care bits
+	e_dpot_comm 	comm : 2; // command bits
+	u8 	  			db_2 : 2; // don't care bits
+	u8  ch_select : 2;// channel select
+} t_dpot_hdr;
+
+typedef struct _t_dpot_send
+{
+	t_dpot_hdr  hdr;
+	u8 			data;
+} t_dpot_send;
+
+#pragma pack(pop)
 
 #endif /* MAIN_H_ */
