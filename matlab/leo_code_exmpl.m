@@ -1,6 +1,6 @@
 clear;
 
-Fs = 80;
+Fs = 0;
 T = 3;
 ts= 0:1/Fs:T-1/Fs;
 
