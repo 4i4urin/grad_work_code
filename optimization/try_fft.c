@@ -8,10 +8,26 @@ int main(void)
 
 	if ( read_arr_file(adc_vals, MEAS_NUM, "spi.txt") == NULL )
 		exit_code(E_ERR_FILE_READ, "ERROR: file read");
-	
+
 	show_array(adc_vals, MEAS_NUM);
 
 	return 0;
+}
+
+
+void show_binary(u16 num)
+{
+	for (s8 i = 15; i >= 0; i--)
+		printf(  "%c", ( (num >> i) & 0x01 ) ? '1': '0');
+}
+
+
+u16 reverse(u16 byte)
+{
+	byte = ( ((byte & 0xaaaa) >> 1) | ((byte & 0x5555) << 1) );
+	byte = ( ((byte & 0xcccc) >> 2) | ((byte & 0x3333) << 2) );
+	byte = ( ((byte & 0xf0f0) >> 4) | ((byte & 0x0f0f) << 4) );
+	return ((byte >> 8) | (byte << 8));
 }
 
 

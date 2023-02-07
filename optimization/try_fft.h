@@ -29,5 +29,7 @@ typedef enum _e_errors
 void show_array(u16* parr, u16 arr_size);
 u16* read_arr_file(u16* parr, u16 arr_size, char* pfile_name);
 void exit_code(e_errors ex_code, const char* pmsg_to_usr);
+u16 reverse(u16 byte);
+void show_binary(u16 num);
 
 #endif /* TRY_FFT_H */
