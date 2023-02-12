@@ -1,16 +1,18 @@
 clear;
-meas_ = load("calib.txt");
-%meas_ = load("music.txt");
-meas = meas_;%(1000:end);
+%meas_ = load("calib.txt");
+meas_ = load("spi.txt");
+meas = meas_(1:64);
 plot(meas);
 
 mid = mean(meas);
 disp(mid);
 scope = max(meas) - min(meas);
 disp(scope);
-
+disp(meas);
 figure;
+format("short");
 freq = fft(meas);
+disp(num2str(abs(freq)));
 p2 = abs(freq / length(meas));
 p1 = p2(1:length(meas) / 2 + 1);
 %p1 = p2;
@@ -39,6 +41,7 @@ for i = 1:3
 end
 %how find picks?
 
+%{
 function fft = find_peaks(fft)
     peak = max(fft);
     pos = find(fft == peak);
@@ -76,6 +79,7 @@ function arr = cut_from_arr(arr, ri, li, val)
         arr(i) = val;
     end
 end
+%}
 
 
 
