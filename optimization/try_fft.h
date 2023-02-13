@@ -18,7 +18,8 @@
 
 #define MEAS_NUM 	4096
 
-#define PI	3.14159265358979323846264338327950288
+#define PI			3.14159265358979323846264338327950288
+#define ABS(x, y) 	sqrt(pow(x, 2) + pow(y, 2))
 
 typedef enum _e_errors
 {
@@ -29,21 +30,22 @@ typedef enum _e_errors
 	E_ERR_FFT_DIM
 } e_errors;
 
-typedef struct
+typedef struct _t_complex
 {
-    s32 Re; 
-    s32 Im;
-} complex;
+    s16 re; 
+    s16 im;
+} t_complex;
 
 void show_array(s32* parr, u16 arr_size);
 void out_array_file(s32* parr, u16 arr_size, const char* pfile_name);
-complex* read_arr_file(complex* parr, u16 arr_size, char* pfile_name);
+t_complex* read_arr_file(t_complex* parr, u16 arr_size, char* pfile_name);
 void exit_code(e_errors ex_code, const char* pmsg_to_usr);
 u16 reverse(u16 byte);
 
 // fft 
-static void print_vector( const char *title, complex *x, int n);
-void fft( complex *v, int n, complex *tmp );
+static void print_vector( const char *title, t_complex *x, int n);
+void fft( t_complex *v, int n, t_complex *tmp );
 s32 abs_2(s32 x, s32 y);
+void shuffle_arr_fft(t_complex* tmp, u16 arr_size);
 
 #endif /* TRY_FFT_H */

@@ -5,38 +5,34 @@
 int main(void)
 {
 	
-	complex adc_vals[MEAS_NUM] = { 0 };
-	complex scratch[MEAS_NUM]  = { 0 };
-	s32 abs_arr[MEAS_NUM] = { 0 };
+	t_complex adc_vals[MEAS_NUM] = { 0 };
+	t_complex scratch[MEAS_NUM]  = { 0 };
+	s32 abs_arr[MEAS_NUM / 2] = { 0 };
 
-	if ( read_arr_file(adc_vals, MEAS_NUM, "spi.txt") == NULL )
+	if ( read_arr_file(adc_vals, MEAS_NUM, "music.txt") == NULL )
 		exit_code(E_ERR_FILE_READ, "ERROR: file read");
 
 	//show_array(adc_vals, MEAS_NUM);
-	//print_vector("Orig", adc_vals, MEAS_NUM);
+	//shuffle_arr_fft(adc_vals, MEAS_NUM);
     fft( adc_vals, MEAS_NUM, scratch );
-    //print_vector(" FFT", adc_vals, MEAS_NUM);
-    for (u16 i = 0; i < MEAS_NUM; i++)
-    	abs_arr[i] = abs_2(adc_vals[i].Re, adc_vals[i].Im);
+
+    for (u16 i = 0; i < MEAS_NUM / 2; i++)
+    	abs_arr[i] = ABS(adc_vals[i].re, adc_vals[i].im);
 
     // show_array(abs_arr, MEAS_NUM);
-    out_array_file(abs_arr, MEAS_NUM, "res_fft_c.txt");
+    out_array_file(abs_arr, MEAS_NUM / 2, "res_fft_c.txt");
 
 	return 0;
 }
 
-s32 abs_2(s32 x, s32 y)
-{
-	return sqrt(pow(y, 2) + pow(x, 2));
-}
-
-void fft( complex *v, int n, complex *tmp )
+void fft( t_complex *v, int n, t_complex *tmp )
 {
     if(n <= 1) 			/* otherwise, do nothing and return */
         return;
 
     int k, m;
-    complex z, w, *vo, *ve;
+    t_complex z, *vo, *ve;
+    t_complex_s8 const *pw;
 
     ve = tmp; vo = tmp + n / 2;
 
@@ -47,35 +43,63 @@ void fft( complex *v, int n, complex *tmp )
     }
     fft( ve, n/2, v );		/* FFT on even-indexed elements of v[] */
     fft( vo, n/2, v );		/* FFT on odd-indexed elements of v[] */
+
     for(m = 0; m < n / 2; m++) 
     {
-    	w = fft_table(n, m, MEAS_NUM);
-    	if (w.Im == 0 && w.Re == 0)
+    	pw = fft_table(n, m, MEAS_NUM);
+    	if (pw == NULL)
     		exit_code(E_ERR_FFT_DIM, "ERROR: FFT DIMENTION");
 
-        z.Re = (w.Re * vo[m].Re - w.Im * vo[m].Im) / 1000;	/* Re(w*vo[m]) */
-        z.Im = (w.Re * vo[m].Im + w.Im * vo[m].Re) / 1000;	/* Im(w*vo[m]) */
-        v[m].Re         = ve[m].Re + z.Re;
-        v[m].Im         = ve[m].Im + z.Im;
-        v[m + n / 2].Re = ve[m].Re - z.Re;
-        v[m + n / 2].Im = ve[m].Im - z.Im;
-        /* DEBUG
-        if (   v[m].Re >= 500000  || v[m + n / 2].Re >= 500000
-        	|| v[m].Re <= -500000 || v[m + n / 2].Re <= -500000)
-        	printf("v[m] = {%d, %d}\nv[m+n/2] = {%d, %d}\nn = %d\nm = %d\n",
-        			v[m].Re, v[m].Im, v[m + n / 2].Re, v[m + n / 2].Im, n, m);
-        */
+        z.re = ((s16)pw->re * vo[m].re - (s16)pw->im * vo[m].im) / 100;	/* re(w*vo[m]) */
+        z.im = ((s16)pw->re * vo[m].im + (s16)pw->im * vo[m].re) / 100;	/* im(w*vo[m]) */
+
+        v[m].re         = ve[m].re + z.re;
+        v[m].im         = ve[m].im + z.im;
+
+        v[m + n / 2].re = ve[m].re - z.re;
+        v[m + n / 2].im = ve[m].im - z.im;
+        /* DEBUG */
+        // if (   v[m].re >= 500000  || v[m + n / 2].re >= 500000
+        // 	|| v[m].re <= -500000 || v[m + n / 2].re <= -500000)
+        // {
+        // 	printf("v[m] = {%d, %d}\nv[m+n/2] = {%d, %d}\nn = %d\nm = %d\n",
+        // 			v[m].re, v[m].im, v[m + n / 2].re, v[m + n / 2].im, n, m);
+        // 	printf("W.re = %d\nW.im = %d\n\n", w.re, w.im);
+        // 	printf("z.re = %d\nz.im = %d\n\n", z.re, z.im);
+ 		// }       	
     }
 }
 
+
+void shuffle_arr_fft(t_complex* tmp, u16 arr_size)
+{
+	u8 shift = 0; // 16 bit in uint16_t
+	for (shift; (shift < 16) && ((arr_size - 1) >> shift); shift++) {};
+
+		// 16 bit in uint16_t
+	shift = 16 - shift;
+
+	t_complex swap = {0, 0};
+	for (u16 i = 0; i < arr_size / 2; i++)
+	{
+		if (i == reverse(i) >> shift)
+			continue;
+
+		swap = tmp[i];
+		tmp[i] = tmp[reverse(i) >> shift];
+		tmp[reverse(i) >> shift] = swap;
+	}
+}
+
+
 /* Print a vector of complexes as ordered pairs. */
-static void print_vector( const char *title, complex *x, int n)
+static void print_vector( const char *title, t_complex *x, int n)
 {
     int i;
     printf("%s (dim = %d):\n", title, n);
 
     for(i = 0; i < n; i++ ) 
-        printf(" %5d,\t%5d\n", x[i].Re, x[i].Im);
+        printf(" %5d,\t%5d\n", x[i].re, x[i].im);
 
     putchar('\n');
     return;
@@ -105,7 +129,7 @@ void show_array(s32* parr, u16 arr_size)
 }
 
 
-complex* read_arr_file(complex* parr, u16 arr_size, char* pfile_name)
+t_complex* read_arr_file(t_complex* parr, u16 arr_size, char* pfile_name)
 {
 	FILE* f = fopen(pfile_name, "r");
 
@@ -114,9 +138,10 @@ complex* read_arr_file(complex* parr, u16 arr_size, char* pfile_name)
 
 	for (u16 i = 0; i < arr_size; i++)
 	{
-		parr[i].Im = 0;
-		if (fscanf(f, "%d", &parr[i].Re) == EOF)
+		parr[i].im = 0;
+		if (fscanf(f, "%hd", &parr[i].re) == EOF)
 			return NULL;
+		parr[i].re >>= 4;
 	}
 
 	if ( fclose(f) )
