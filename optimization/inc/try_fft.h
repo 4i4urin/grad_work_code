@@ -16,7 +16,11 @@
 #define s32  	int32_t
 #define s64 	int32_t
 
-#define MEAS_NUM 	4096
+#include "fft_table.h"
+
+#define MEAS_POW2   12
+#define MEAS_NUM 	1 << MEAS_POW2
+#define REVERS_SHIFT 16 - MEAS_POW2 // use uint
 
 #define PI			3.14159265358979323846264338327950288
 #define ABS(x, y) 	sqrt(pow(x, 2) + pow(y, 2))
@@ -37,15 +41,21 @@ typedef struct _t_complex
 } t_complex;
 
 void show_array(s32* parr, u16 arr_size);
-void out_array_file(s32* parr, u16 arr_size, const char* pfile_name);
+void out_array_file(u16* parr, u16 arr_size, const char* pfile_name);
 t_complex* read_arr_file(t_complex* parr, u16 arr_size, char* pfile_name);
 void exit_code(e_errors ex_code, const char* pmsg_to_usr);
-u16 reverse(u16 byte);
 
 // fft 
 static void print_vector( const char *title, t_complex *x, int n);
-void fft( t_complex *v, int n, t_complex *tmp );
-s32 abs_2(s32 x, s32 y);
-void shuffle_arr_fft(t_complex* tmp, u16 arr_size);
+void fft(const t_complex* pin_vect, t_complex* res);
+u16 reverse(u16 byte);
+
+t_complex fft_first_op(const t_complex*    const pfirst,  // A
+					   const t_complex*    const psecond, // B
+					   const t_complex_s8* const pw);     // W
+
+t_complex fft_second_op(const t_complex* 	const pfirst,  // A
+						const t_complex* 	const psecond, // B
+						const t_complex_s8* const pw);	   // W
 
 #endif /* TRY_FFT_H */

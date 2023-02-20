@@ -7,7 +7,7 @@ typedef struct _t_complex_s8
     s8 im;
 } t_complex_s8;
 
-t_complex_s8 const* fft_table(u16 n, u16 m, u16 dim);
+const t_complex_s8* fft_table(u16 n, u16 m, u16 dim);
 
 static const t_complex_s8 table_fft_64[] = {
     {  100,     0},
@@ -43,6 +43,43 @@ static const t_complex_s8 table_fft_64[] = {
     {  -98,   -19},
     {  -99,    -9}           
 };
+
+
+// static const t_complex_s8 table_fft_64[] = {
+//     {100, 0},
+//     {99, -9},
+//     {98, -19},
+//     {95, -29},
+//     {92, -38},
+//     {88, -47},
+//     {83, -55},
+//     {77, -63},
+//     {70, -70},
+//     {63, -77},
+//     {55, -83},
+//     {47, -88},
+//     {38, -92},
+//     {29, -95},
+//     {19, -98},
+//     {9, -99},
+//     {0, -100},
+//     {-9, -99},
+//     {-19, -98},
+//     {-29, -95},
+//     {-38, -92},
+//     {-47, -88},
+//     {-55, -83},
+//     {-63, -77},
+//     {-70, -70},
+//     {-77, -63},
+//     {-83, -55},
+//     {-88, -47},
+//     {-92, -38},
+//     {-95, -29},
+//     {-98, -19},
+//     {-99, -9}
+// }
+
 
 static const t_complex_s8 table_fft_4096[] = {
     { 100,   0},{  99,   0},{  99,   0},
@@ -730,7 +767,7 @@ static const t_complex_s8 table_fft_4096[] = {
     { -99,   0},{ -99,   0}
 };
 
-t_complex_s8 const* fft_table(u16 n, u16 m, u16 dim)
+const t_complex_s8* fft_table(u16 n, u16 m, u16 dim)
 {
     if (dim == 64)
         return &table_fft_64[m * (64 / n)];

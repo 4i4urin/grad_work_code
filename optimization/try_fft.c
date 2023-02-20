@@ -1,94 +1,106 @@
-#include "try_fft.h"
-
-#include "fft_table.h"
+#include "inc/try_fft.h"
 
 int main(void)
 {
 	
 	t_complex adc_vals[MEAS_NUM] = { 0 };
 	t_complex scratch[MEAS_NUM]  = { 0 };
-	s32 abs_arr[MEAS_NUM / 2] = { 0 };
 
-	if ( read_arr_file(adc_vals, MEAS_NUM, "music.txt") == NULL )
+	if ( read_arr_file(adc_vals, MEAS_NUM, "calib.txt") == NULL )
 		exit_code(E_ERR_FILE_READ, "ERROR: file read");
 
-	//show_array(adc_vals, MEAS_NUM);
-	//shuffle_arr_fft(adc_vals, MEAS_NUM);
-    fft( adc_vals, MEAS_NUM, scratch );
+	fft(adc_vals, scratch);
+	// print_vector("fft", scratch, 64);
 
-    for (u16 i = 0; i < MEAS_NUM / 2; i++)
-    	abs_arr[i] = ABS(adc_vals[i].re, adc_vals[i].im);
+	u16 res_abs[MEAS_NUM] = { 0 };
+
+    for (u16 i = 0; i < MEAS_NUM; i++)
+    	res_abs[i] = ABS(scratch[i].re, scratch[i].im);
 
     // show_array(abs_arr, MEAS_NUM);
-    out_array_file(abs_arr, MEAS_NUM / 2, "res_fft_c.txt");
+    out_array_file(res_abs, MEAS_NUM, "res_fft_c.txt");
 
 	return 0;
 }
 
-void fft( t_complex *v, int n, t_complex *tmp )
+
+void fft(const t_complex* pin_vect, t_complex* res)
 {
-    if(n <= 1) 			/* otherwise, do nothing and return */
-        return;
+	const t_complex_s8* pcplx_w;
+	t_complex cplx_temp1 = {0, 0};
+	t_complex cplx_temp2 = {0, 0};
+	t_complex cplx_v1    = {0, 0};
+	t_complex cplx_v2    = {0, 0};
+	u16 n_base = 0, n_base_widlth = 0;
+	u16 indx_1 = 0, indx_2 = 0;
 
-    int k, m;
-    t_complex z, *vo, *ve;
-    t_complex_s8 const *pw;
-
-    ve = tmp; vo = tmp + n / 2;
-
-    for(k = 0; k < n / 2; k++) 
+    for (u8 step = 0; step < MEAS_POW2; step++)
     {
-        ve[k] = v[2 * k];
-        vo[k] = v[2 * k + 1];
+        n_base  = 1 << step;
+        n_base_widlth = 1 << ( step + 1 );
+        for (u16 group = 0; group < (MEAS_NUM >> (1 + step) ); group++ ) // inf loop
+        {
+            for (u16 group_size = 0; group_size < n_base; group_size++)
+            {   
+                pcplx_w = fft_table(n_base * 2, group_size, MEAS_NUM);                
+                indx_1  = (group * n_base_widlth) + group_size;
+                indx_2  = indx_1 + n_base;
+
+                if (!step)
+                {
+                    cplx_temp1.re = pin_vect[ reverse(indx_1) ].re;
+                    cplx_temp2.re = pin_vect[ reverse(indx_2) ].re;
+                    cplx_v1 = fft_first_op (&cplx_temp1, &cplx_temp2, pcplx_w);
+                    cplx_v2 = fft_second_op(&cplx_temp1, &cplx_temp2, pcplx_w);
+                } else
+                {
+	                cplx_v1 = fft_first_op (&res[indx_1], &res[indx_2], pcplx_w);
+	                cplx_v2 = fft_second_op(&res[indx_1], &res[indx_2], pcplx_w);
+                }
+
+                res[indx_1] = cplx_v1;
+                res[indx_2] = cplx_v2;
+            }  
+        }
     }
-    fft( ve, n/2, v );		/* FFT on even-indexed elements of v[] */
-    fft( vo, n/2, v );		/* FFT on odd-indexed elements of v[] */
-
-    for(m = 0; m < n / 2; m++) 
-    {
-    	pw = fft_table(n, m, MEAS_NUM);
-    	if (pw == NULL)
-    		exit_code(E_ERR_FFT_DIM, "ERROR: FFT DIMENTION");
-
-        z.re = ((s16)pw->re * vo[m].re - (s16)pw->im * vo[m].im) / 100;	/* re(w*vo[m]) */
-        z.im = ((s16)pw->re * vo[m].im + (s16)pw->im * vo[m].re) / 100;	/* im(w*vo[m]) */
-
-        v[m].re         = ve[m].re + z.re;
-        v[m].im         = ve[m].im + z.im;
-
-        v[m + n / 2].re = ve[m].re - z.re;
-        v[m + n / 2].im = ve[m].im - z.im;
-        /* DEBUG */
-        // if (   v[m].re >= 500000  || v[m + n / 2].re >= 500000
-        // 	|| v[m].re <= -500000 || v[m + n / 2].re <= -500000)
-        // {
-        // 	printf("v[m] = {%d, %d}\nv[m+n/2] = {%d, %d}\nn = %d\nm = %d\n",
-        // 			v[m].re, v[m].im, v[m + n / 2].re, v[m + n / 2].im, n, m);
-        // 	printf("W.re = %d\nW.im = %d\n\n", w.re, w.im);
-        // 	printf("z.re = %d\nz.im = %d\n\n", z.re, z.im);
- 		// }       	
-    }
+    // return res;
 }
 
 
-void shuffle_arr_fft(t_complex* tmp, u16 arr_size)
+// tmp = A + B * W / 100
+t_complex fft_first_op(const t_complex*    const pfirst,  // A
+					   const t_complex*    const psecond, // B
+					   const t_complex_s8* const pw)      // W
 {
-	u8 shift = 0; // 16 bit in uint16_t
-	for (shift; (shift < 16) && ((arr_size - 1) >> shift); shift++) {};
+	t_complex tmp = {0, 0};
+	tmp.re = ( (psecond->re * (s16)pw->re) - (psecond->im * (s16)pw->im) ) / 100;
+	tmp.im = ( (psecond->re * (s16)pw->im) + (psecond->im * (s16)pw->re) ) / 100;
+	tmp.re += pfirst->re;
+	tmp.im += pfirst->im;
+	return tmp;
+}
 
-		// 16 bit in uint16_t
-	shift = 16 - shift;
 
-	t_complex swap = {0, 0};
-	for (u16 i = 0; i < arr_size / 2; i++)
-	{
-		if (i == reverse(i) >> shift)
-			continue;
+// tmp = A - B * W
+t_complex fft_second_op(const t_complex* 	const pfirst,  // A
+						const t_complex* 	const psecond, // B
+						const t_complex_s8* const pw)	   // W
+{
+	t_complex tmp = {0, 0};
+	tmp.re = ( (psecond->re * (s16)pw->re) - (psecond->im * (s16)pw->im) ) / 100;
+	tmp.im = ( (psecond->re * (s16)pw->im) + (psecond->im * (s16)pw->re) ) / 100;
+	tmp.re = pfirst->re - tmp.re;
+	tmp.im = pfirst->im - tmp.im;
+	return tmp;
+}
 
-		swap = tmp[i];
-		tmp[i] = tmp[reverse(i) >> shift];
-		tmp[reverse(i) >> shift] = swap;
-	}
+
+u16 reverse(u16 byte)
+{
+	byte = ( ((byte & 0xaaaa) >> 1) | ((byte & 0x5555) << 1) );
+	byte = ( ((byte & 0xcccc) >> 2) | ((byte & 0x3333) << 2) );
+	byte = ( ((byte & 0xf0f0) >> 4) | ((byte & 0x0f0f) << 4) );
+	return ( (byte >> 8) | (byte << 8) ) >> (REVERS_SHIFT);
 }
 
 
@@ -103,15 +115,6 @@ static void print_vector( const char *title, t_complex *x, int n)
 
     putchar('\n');
     return;
-}
-
-
-u16 reverse(u16 byte)
-{
-	byte = ( ((byte & 0xaaaa) >> 1) | ((byte & 0x5555) << 1) );
-	byte = ( ((byte & 0xcccc) >> 2) | ((byte & 0x3333) << 2) );
-	byte = ( ((byte & 0xf0f0) >> 4) | ((byte & 0x0f0f) << 4) );
-	return ((byte >> 8) | (byte << 8));
 }
 
 
@@ -150,7 +153,8 @@ t_complex* read_arr_file(t_complex* parr, u16 arr_size, char* pfile_name)
 	return parr;
 }
 
-void out_array_file(s32* parr, u16 arr_size, const char* pfile_name)
+
+void out_array_file(u16* parr, u16 arr_size, const char* pfile_name)
 {
 	FILE* f = fopen(pfile_name, "w");
 
@@ -158,7 +162,7 @@ void out_array_file(s32* parr, u16 arr_size, const char* pfile_name)
 		exit_code(E_ERR_FILE_OPEN, "ERROR: file open");
 
 	for (u16 i = 0; i < arr_size; i++)
-		fprintf(f, "%d\n", parr[i]);
+		fprintf(f, "%hd\n", parr[i]);
 
 	if ( fclose(f) )
 		exit_code(E_ERR_FILE_CLOSE, "ERROR: file close");
