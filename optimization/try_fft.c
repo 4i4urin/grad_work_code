@@ -1,5 +1,6 @@
 #include "inc/try_fft.h"
 
+
 // todo:
 // 1. fft is mirrored use it
 // 2. rework abs to isqrt use binary search or Newton alg kind of strange
@@ -7,6 +8,12 @@
 // 4. reformat projct
 // 5. make fft analysis
 
+// newton music - 	good
+	   // spi   - 	good 
+	   // calib - 	ok
+// binary music -   shit overflow
+	   // spi   -   shit overflow
+	   // calob	- 	shit overflow
 
 int main(void)
 {
@@ -17,20 +24,21 @@ int main(void)
 		exit_code(E_ERR_FILE_READ, "ERROR: file read");
 
 	u32 start_time = get_time_us();
-	fft(adc_vals, res_fft);
+	fft(adc_vals, res_fft, MEAS_NUM, MEAS_POW2);
 	printf("fft time = %d\n\n", get_time_us() - start_time);
 
 	// print_vector("fft", res_fft, 64);
-	u16 res_abs[MEAS_NUM] = { 0 };
+	u16 res_abs[MEAS_NUM / 2] = { 0 };
 
     u16 (*pfsqrt)(u32) = sqrt;
     printf("sqrt math    = %d\n\n", meas_sqrt_time(res_fft, pfsqrt));
     printf("isqrt_newton = %d\n\n", meas_sqrt_time(res_fft, isqrt_newton));
     printf("isqrt_linear = %d\n\n", meas_sqrt_time(res_fft, isqrt_linear));
     printf("isqrt_binary = %d\n\n", meas_sqrt_time(res_fft, isqrt_binary));
+    
     for (u16 i = 0; i < MEAS_NUM / 2; i++)
-		res_abs[i] = isqrt_binary( res_fft[i].re * res_fft[i].re
-								 + res_fft[i].im * res_fft[i].im );
+		res_abs[i] = isqrt_newton( res_fft[i].re * res_fft[i].re
+						 		 + res_fft[i].im * res_fft[i].im );
 
     // printf("fft time = %d\nabs[MEAS/2] time = %d\ntime sum = %d\n", 
     		// calc_time_us, calcabs_time_us, calc_time_us + calcabs_time_us);
@@ -39,6 +47,7 @@ int main(void)
 
 	return 0;
 }
+
 
 u32 get_time_us(void)
 {
@@ -61,48 +70,6 @@ u32 meas_sqrt_time(const t_complex* pcplx_arr, u16 (*pfsqrt)(u32))
 
     return get_time_us() - start_time;
 }
-
-void fft(const t_complex* pin_vect, t_complex* res)
-{
-	const t_complex_s8* pcplx_w;
-	t_complex cplx_temp1 = {0, 0};
-	t_complex cplx_temp2 = {0, 0};
-	t_complex cplx_v1    = {0, 0};
-	t_complex cplx_v2    = {0, 0};
-	u16 n_base = 0, n_base_widlth = 0;
-	u16 indx_1 = 0, indx_2 = 0;
-
-    for (u8 step = 0; step < MEAS_POW2; step++)
-    {
-        n_base  = 1 << step;
-        n_base_widlth = 1 << ( step + 1 );
-        for (u16 group = 0; group < (MEAS_NUM >> (1 + step) ); group++ ) // inf loop
-        {
-            for (u16 group_size = 0; group_size < n_base; group_size++)
-            {   
-                pcplx_w = fft_table(n_base * 2, group_size, MEAS_NUM);                
-                indx_1  = (group * n_base_widlth) + group_size;
-                indx_2  = indx_1 + n_base;
-
-                if (!step)
-                {
-                    cplx_temp1.re = pin_vect[ reverse(indx_1) ].re;
-                    cplx_temp2.re = pin_vect[ reverse(indx_2) ].re;
-                    cplx_v1 = fft_first_op (&cplx_temp1, &cplx_temp2, pcplx_w);
-                    cplx_v2 = fft_second_op(&cplx_temp1, &cplx_temp2, pcplx_w);
-                } else
-                {
-	                cplx_v1 = fft_first_op (&res[indx_1], &res[indx_2], pcplx_w);
-	                cplx_v2 = fft_second_op(&res[indx_1], &res[indx_2], pcplx_w);
-                }
-
-                res[indx_1] = cplx_v1;
-                res[indx_2] = cplx_v2;
-            }  
-        }
-    }
-}
-
 
 // Square root of integer
 u16 isqrt_newton(u32 val)
@@ -160,43 +127,6 @@ u16 isqrt_linear(u32 val)
 	}
 
 	return (u16)res;
-}
-
-
-// tmp = A + B * W / 100
-t_complex fft_first_op(const t_complex*    const pfirst,  // A
-					   const t_complex*    const psecond, // B
-					   const t_complex_s8* const pw)      // W
-{
-	t_complex tmp = {0, 0};
-	tmp.re = ( (psecond->re * (s16)pw->re) - (psecond->im * (s16)pw->im) ) / 100;
-	tmp.im = ( (psecond->re * (s16)pw->im) + (psecond->im * (s16)pw->re) ) / 100;
-	tmp.re += pfirst->re;
-	tmp.im += pfirst->im;
-	return tmp;
-}
-
-
-// tmp = A - B * W
-t_complex fft_second_op(const t_complex* 	const pfirst,  // A
-						const t_complex* 	const psecond, // B
-						const t_complex_s8* const pw)	   // W
-{
-	t_complex tmp = {0, 0};
-	tmp.re = ( (psecond->re * (s16)pw->re) - (psecond->im * (s16)pw->im) ) / 100;
-	tmp.im = ( (psecond->re * (s16)pw->im) + (psecond->im * (s16)pw->re) ) / 100;
-	tmp.re = pfirst->re - tmp.re;
-	tmp.im = pfirst->im - tmp.im;
-	return tmp;
-}
-
-
-u16 reverse(u16 byte)
-{
-	byte = ( ((byte & 0xaaaa) >> 1) | ((byte & 0x5555) << 1) );
-	byte = ( ((byte & 0xcccc) >> 2) | ((byte & 0x3333) << 2) );
-	byte = ( ((byte & 0xf0f0) >> 4) | ((byte & 0x0f0f) << 4) );
-	return ( (byte >> 8) | (byte << 8) ) >> (REVERS_SHIFT);
 }
 
 
