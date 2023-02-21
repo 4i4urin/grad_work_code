@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 
 #define u8 		uint8_t
 #define u16 	uint16_t
@@ -19,7 +20,7 @@
 #include "fft_table.h"
 
 #define MEAS_POW2   12
-#define MEAS_NUM 	1 << MEAS_POW2
+#define MEAS_NUM 	(1 << MEAS_POW2)
 #define REVERS_SHIFT 16 - MEAS_POW2 // use uint
 
 #define PI			3.14159265358979323846264338327950288
@@ -40,10 +41,14 @@ typedef struct _t_complex
     s16 im;
 } t_complex;
 
-void show_array(s32* parr, u16 arr_size);
+void show_array(u16* parr, u16 arr_size);
 void out_array_file(u16* parr, u16 arr_size, const char* pfile_name);
 t_complex* read_arr_file(t_complex* parr, u16 arr_size, char* pfile_name);
 void exit_code(e_errors ex_code, const char* pmsg_to_usr);
+
+u32 get_time_us(void);
+// int gettimeofday(struct timeval *tv, struct timezone *tz);
+
 
 // fft 
 static void print_vector( const char *title, t_complex *x, int n);
@@ -57,5 +62,14 @@ t_complex fft_first_op(const t_complex*    const pfirst,  // A
 t_complex fft_second_op(const t_complex* 	const pfirst,  // A
 						const t_complex* 	const psecond, // B
 						const t_complex_s8* const pw);	   // W
+
+// sqrt
+u16 isqrt_linear(u32 val);
+u16 isqrt_binary(u32 val);
+u16 isqrt_newton(u32 val);
+u32 meas_sqrt_time(const t_complex* pcplx_arr, u16 (*pfsqrt)(u32));
+
+
+
 
 #endif /* TRY_FFT_H */
