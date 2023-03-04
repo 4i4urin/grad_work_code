@@ -1,4 +1,4 @@
-#include <main.h>
+#include "main.h"
 /*
  * TODO:
  *
@@ -19,6 +19,7 @@ u8 com_receive;
 //u8 rx_buf[MAX_STR_SIZE];
 u8 make_adc;
 
+
 /**
   * @brief  Передача строки по USART2 без DMA
   * @param  *str - указатель на строку
@@ -35,6 +36,7 @@ void tx_str(char *str)
 	}
 }
 
+
 /**
   * @brief  Передача символа по USART2 без DMA
   * @param  ch - символ для передачи
@@ -45,6 +47,7 @@ void tx_char(char ch)
 	USART2->DR = ch;
 	while ((USART2->SR & USART_SR_TC) == 0) {};
 }
+
 
 /**
   * @brief  Считывание значения ацп
@@ -92,11 +95,13 @@ void USART2_IRQHandler(void)
 	}
 }
 
+
 void TIM4_IRQHandler()
 {
 	TIM4->SR &= ~TIM_SR_UIF; // drop update flag
 	make_adc = 1;
 }
+
 
 void start_tim4_khz(u16 kHz)
 {
@@ -104,12 +109,14 @@ void start_tim4_khz(u16 kHz)
 	START_TIM4();
 }
 
-u8 reverse(u8 byte)
+
+u8 reverse_8(u8 byte)
 {
 	byte = ( ((byte & 0xaa) >> 1) | ((byte & 0x55) << 1) );
 	byte = ( ((byte & 0xcc) >> 2) | ((byte & 0x33) << 2) );
 	return ((byte >> 4) | (byte << 4));
 }
+
 
 void send_dpot(u8 res_byte)
 {
@@ -118,7 +125,7 @@ void send_dpot(u8 res_byte)
 	msg.hdr.ch_select = 0x03;
 	msg.hdr.db_1 = 0x03;
 	msg.hdr.db_2 = 0x00;
-	msg.data = reverse(res_byte);
+	msg.data = reverse_8(res_byte);
 	spi1_write((u16*)&msg);
 }
 
@@ -134,14 +141,13 @@ void spi1_write(u16* pdata)
 
 int main(void)
 {
-	init_clk();
-	init_adc();
-	init_usart2();
-	init_tim4();
-	init_spi();
+	init_device();
+	t_complex var1 = {0, 0};
+	t_complex var2 = {0, 0};
+	fft(&var1, &var2, 0, 0);
 
 	delay(10000000);
-	u16 some_arr[ARR_SIZE] = { 0 };
+	u16 some_arr[MEAS_NUM] = { 0 };
 	u16* volts = some_arr;
 	make_adc = 0;
 
@@ -151,18 +157,34 @@ int main(void)
 
     while (1)
     {
-    	tx_str("Start_measrumrnts\r\n");
-    	volts = make_meas_adc(volts, ARR_SIZE, 40);
-    	tx_str("Finish_mesrument\r\n");
+    	while ( !com_receive) {};
+    	send_dpot(0x05);
+    	com_receive = 0;
 
-    	wait_com_uart();
+    	while ( !com_receive) {};
+    	send_dpot(0x3F);
+    	com_receive = 0;
 
-    	tx_char('\r');
-    	for (u16 i = 0; i < ARR_SIZE; i++)
-    	{
-    		sprintf(tx_buf, "%d\r\n", volts[i]);
-    		tx_str(tx_buf);
-    	}
+    	while ( !com_receive) {};
+    	send_dpot(0x7F);
+    	com_receive = 0;
+
+    	while ( !com_receive) {};
+    	send_dpot(0xFF);
+    	com_receive = 0;
+
+//    	tx_str("Start_measrumrnts\r\n");
+//    	volts = make_meas_adc(volts, ARR_SIZE, 40);
+//    	tx_str("Finish_mesrument\r\n");
+//
+//    	wait_com_uart();
+//
+//    	tx_char('\r');
+//    	for (u16 i = 0; i < ARR_SIZE; i++)
+//    	{
+//    		sprintf(tx_buf, "%d\r\n", volts[i]);
+//    		tx_str(tx_buf);
+//    	}
     }
 }
 

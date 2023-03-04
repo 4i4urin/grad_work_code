@@ -7,12 +7,29 @@
 #include "inits.h"
 
 
-void init_spi(void)
+static void init_adc(void);
+static void init_clk(void);
+static void init_usart2(void);
+static void init_tim4(void);
+static void init_spi(void);
+
+
+void init_device(void)
+{
+	init_clk();
+	init_adc();
+	init_usart2();
+	init_tim4();
+	init_spi();
+}
+
+
+static void init_spi(void)
 {
 	// SPI1 + remap
-	// PB3 - SCK  	PA5
-	// PB4 - ~CS 	PA6
-	// PB5 - SI - MOSI PA7
+	// PB3 - SCK  	PA5 D13
+	// PB4 - ~CS 	PA6 D12
+	// PB5 - SI - MOSI PA7 D11
 	// 8 bit
 	// f clk = 10Mhz
 	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // SPI clocking
@@ -54,7 +71,7 @@ void init_spi(void)
 	SPI1->CR1 &= ~(SPI_CR1_BR);
 	SPI1->CR1 |= SPI_CR1_BR_1 | SPI_CR1_BR_2; // 010 = f MCU / 8 = 8Mhz
 	SPI1->CR1 |= SPI_CR1_MSTR; // master mode
-	SPI1->CR1 |= SPI_CR1_CPOL; // idel is 1
+	//SPI1->CR1 |= SPI_CR1_CPOL; // idel is 1
 //	SPI1->CR1 |= SPI_CR1_BIDIMODE; // transmit only mode
 	SPI1->CR1 |= SPI_CR1_CPHA;
 	SPI1->CR1 &= ~(SPI_CR1_DFF);
@@ -65,7 +82,7 @@ void init_spi(void)
 }
 
 
-void init_tim4(void)
+static void init_tim4(void)
 {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
 
@@ -85,7 +102,7 @@ void init_tim4(void)
   * @param  None
   * @retval None
   */
-void init_usart2(void)
+static void init_usart2(void)
 {
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;						//включить тактирование альтернативных ф-ций портов
@@ -114,7 +131,7 @@ void init_usart2(void)
 }
 
 
-void init_adc(void)
+static void init_adc(void)
 {
 	// PA0 ADC1 in0
 	// gpio init PA0
@@ -156,7 +173,7 @@ void init_adc(void)
  * @param  None
  * @retval None
  */
-void init_clk(void) {
+static void init_clk(void) {
 	// Enable HSI
 	RCC->CR |= RCC_CR_HSION;
 	while (!(RCC->CR & RCC_CR_HSIRDY)) {
