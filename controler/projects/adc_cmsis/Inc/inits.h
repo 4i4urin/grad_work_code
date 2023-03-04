@@ -17,6 +17,9 @@
 #define MCU_FREQ		64000000 // 64 MHz
 #define TIM4_PSC 		MCU_FREQ / TIM4_FREQ
 
+#define TIM3_FREQ		10000 // 10 kHz
+#define TIM3_PSC 		MCU_FREQ / TIM3_FREQ // tic in 0,1 ms
+
 #define ON_PA6()		GPIOA->BSRR = GPIO_BSRR_BS6;
 #define OFF_PA6()		GPIOA->BSRR = GPIO_BSRR_BR6;
 

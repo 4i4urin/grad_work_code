@@ -12,6 +12,7 @@ static void init_clk(void);
 static void init_usart2(void);
 static void init_tim4(void);
 static void init_spi(void);
+static void init_tim3(void);
 
 
 void init_device(void)
@@ -21,10 +22,11 @@ void init_device(void)
 	init_usart2();
 	init_tim4();
 	init_spi();
+	init_tim3();
 }
 
 
-static void init_spi(void)
+void init_spi(void)
 {
 	// SPI1 + remap
 	// PB3 - SCK  	PA5 D13
@@ -81,8 +83,18 @@ static void init_spi(void)
 	ON_PA6();// turn CS to high
 }
 
+// timer for meas sqrt
+void init_tim3(void)
+{
+	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+	TIM3->PSC = TIM3_PSC - 1; // timer period 10 kHz
+	TIM3->CNT = 0; //  tic in 0,1 ms
+	TIM3->ARR = (2 << 16) - 1; // max val
+}
 
-static void init_tim4(void)
+
+// timer for reading adc
+void init_tim4(void)
 {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
 
@@ -102,7 +114,7 @@ static void init_tim4(void)
   * @param  None
   * @retval None
   */
-static void init_usart2(void)
+void init_usart2(void)
 {
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;						//включить тактирование альтернативных ф-ций портов
@@ -131,7 +143,7 @@ static void init_usart2(void)
 }
 
 
-static void init_adc(void)
+void init_adc(void)
 {
 	// PA0 ADC1 in0
 	// gpio init PA0
@@ -173,7 +185,7 @@ static void init_adc(void)
  * @param  None
  * @retval None
  */
-static void init_clk(void) {
+void init_clk(void) {
 	// Enable HSI
 	RCC->CR |= RCC_CR_HSION;
 	while (!(RCC->CR & RCC_CR_HSIRDY)) {

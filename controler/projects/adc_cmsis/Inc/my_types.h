@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define MEAS_POW2    12
+#define MEAS_POW2    6
 #define MEAS_NUM 	 (1 << MEAS_POW2) // Number of ADC measurements
 //- Coding defines -----------------------------------------------------------
 
@@ -26,6 +26,8 @@
 #define BITS_U8 	8
 
 //----------------------------------------------------------------------------
+
+void delay(u32 del_val);
 
 #pragma pack(push, 1)
 

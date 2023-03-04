@@ -20,14 +20,11 @@ u8 com_receive;
 u8 make_adc;
 
 
-/**
-  * @brief  Передача строки по USART2 без DMA
-  * @param  *str - указатель на строку
-  * @retval None
-  */
-void tx_str(char *str)
+
+//  Передача строки по USART2 без DMA
+void tx_str(const char *str)
 {
-	u16 i;								//добавляем символ конца строки
+	u16 i = 0;
 
 	for (i = 0; i < strlen((char*)str); i++)
 	{
@@ -37,23 +34,15 @@ void tx_str(char *str)
 }
 
 
-/**
-  * @brief  Передача символа по USART2 без DMA
-  * @param  ch - символ для передачи
-  * @retval None
-  */
-void tx_char(char ch)
+// ОТправка данных в юарт
+void tx_char(const char ch)
 {
 	USART2->DR = ch;
 	while ((USART2->SR & USART_SR_TC) == 0) {};
 }
 
 
-/**
-  * @brief  Считывание значения ацп
-  * @param  None
-  * @retval Значение АЦП
-  */
+// Считываем значения с АЦП
 u16 read_adc(void)
 {
 //	ADC1->CR2 |= ADC_CR2_SWSTART;
@@ -64,13 +53,7 @@ u16 read_adc(void)
 }
 
 
-/**
-  * @brief  Обработчик прерывания по UART
-  * @param  None
-  * @retval None
-  * cannot copy paste to terminal
-  * space symbol is terminator
-  */
+// обработчик прерывания по юарт принимает пробелы и тд
 void USART2_IRQHandler(void)
 {
 	if ((USART2->SR & USART_SR_RXNE)!=0)		//Прерывание по приёму данных?
@@ -142,51 +125,85 @@ void spi1_write(u16* pdata)
 int main(void)
 {
 	init_device();
-	t_complex var1 = {0, 0};
-	t_complex var2 = {0, 0};
-	fft(&var1, &var2, 0, 0);
 
 	delay(10000000);
-	u16 some_arr[MEAS_NUM] = { 0 };
-	u16* volts = some_arr;
+	u8 some_arr[MEAS_NUM] = { 0 };
+	u8* volts = some_arr;
 	make_adc = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
-
+	t_complex fft_arr[MEAS_NUM]   = { 0 };
+	t_complex* pfft_arr = fft_arr;
+	u16 stopwatch = 0;
 	com_receive = 0;
 
     while (1)
     {
-    	while ( !com_receive) {};
-    	send_dpot(0x05);
-    	com_receive = 0;
+    	tx_str("Start_measrumrnts\r\n");
+    	START_TIM3();
+    	volts = make_meas_adc(volts, MEAS_NUM, 40);
+    	stopwatch = take_tim3_val();
+    	sprintf(tx_buf, "ADC meas time = %d.%d ms\n\n\r", stopwatch / 10,
+    												 	  stopwatch % 10);
+    	tx_str(tx_buf);
 
-    	while ( !com_receive) {};
-    	send_dpot(0x3F);
-    	com_receive = 0;
+    	START_TIM3();
+    	pfft_arr = make_fft(volts, fft_arr);
+    	stopwatch = take_tim3_val();
+    	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
+    													  stopwatch % 10);
+    	tx_str(tx_buf);
+    	// замерить время
 
-    	while ( !com_receive) {};
-    	send_dpot(0x7F);
-    	com_receive = 0;
+    	u16 linear_time = meas_sqrt_time(pfft_arr, isqrt_linear);
+    	sprintf(tx_buf, "linear_time = %d.%d ms\n\n\r", linear_time / 10,
+    												 	linear_time % 10);
+    	tx_str(tx_buf);
 
-    	while ( !com_receive) {};
-    	send_dpot(0xFF);
-    	com_receive = 0;
 
-//    	tx_str("Start_measrumrnts\r\n");
-//    	volts = make_meas_adc(volts, ARR_SIZE, 40);
-//    	tx_str("Finish_mesrument\r\n");
+    	u16 newton_time = meas_sqrt_time(pfft_arr, isqrt_newton);
+    	sprintf(tx_buf, "newton_time = %d.%d ms\n\n\r", newton_time / 10,
+    												 	newton_time % 10);
+    	tx_str(tx_buf);
+
+    	u16 binary_time = meas_sqrt_time(pfft_arr, isqrt_binary);
+    	sprintf(tx_buf, "binary_time = %d.%d ms\n\n\r", binary_time / 10,
+    													binary_time % 10);
+    	tx_str(tx_buf);
 //
-//    	wait_com_uart();
-//
-//    	tx_char('\r');
-//    	for (u16 i = 0; i < ARR_SIZE; i++)
-//    	{
-//    		sprintf(tx_buf, "%d\r\n", volts[i]);
-//    		tx_str(tx_buf);
-//    	}
+    	wait_com_uart();
+    	tx_str("\rADC meas:\r\n");
+    	for (u16 i = 0; i < MEAS_NUM; i++)
+    	{
+    		sprintf(tx_buf, "%d\r\n", volts[i]);
+    		tx_str(tx_buf);
+    	}
     }
 }
+
+
+u16 take_tim3_val(void)
+{
+	STOP_TIM3();
+	u16 res = TIM3->CNT;
+	TIM3->CNT = 0;
+	return res;
+}
+
+
+
+u32 meas_sqrt_time(const t_complex* pcplx_arr, u16 (*pfsqrt)(u32))
+{
+	u16 sqrt_res[MEAS_NUM / 2] = { 0 };
+
+	START_TIM3();
+    for (u16 i = 0; i < MEAS_NUM / 2; i++)
+    	sqrt_res[i] = (u16) pfsqrt( pcplx_arr[i].re * pcplx_arr[i].re
+    							  + pcplx_arr[i].im * pcplx_arr[i].im);
+
+    return take_tim3_val();
+}
+
 
 void wait_com_uart(void)
 {
@@ -194,24 +211,22 @@ void wait_com_uart(void)
 	com_receive = 0;
 }
 
-u16* make_meas_adc(u16* parr, u16 size, u16 kHz)
+
+u8* make_meas_adc(u8* parr, u16 size, u16 kHz)
 {
 	start_tim4_khz(kHz);
 	for(u16 i = 0; i < size; i++)
 	{
 		while ( !make_adc) {};
-		parr[i] = read_adc();
+		parr[i] = read_adc() >> 4;
 		make_adc = 0;
 	}
 	STOP_TIM4();
 	return parr;
 }
 
-/**
-  * @brief  Задержка по попугаям
-  * @param  del_val значение задержки в попугаях
-  * @retval None
-  */
+
+// Задержка по попугаям
 void delay(u32 del_val)
 {
 	while (del_val)
