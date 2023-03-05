@@ -1,4 +1,5 @@
 #include "main.h"
+#include <math.h>
 /*
  * TODO:
  *
@@ -132,7 +133,7 @@ int main(void)
 	make_adc = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
-	t_complex fft_arr[MEAS_NUM]   = { 0 };
+	t_complex fft_arr[MEAS_NUM] = { 0 };
 	t_complex* pfft_arr = fft_arr;
 	u16 stopwatch = 0;
 	com_receive = 0;
@@ -153,13 +154,6 @@ int main(void)
     	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
     													  stopwatch % 10);
     	tx_str(tx_buf);
-    	// замерить время
-
-    	u16 linear_time = meas_sqrt_time(pfft_arr, isqrt_linear);
-    	sprintf(tx_buf, "linear_time = %d.%d ms\n\n\r", linear_time / 10,
-    												 	linear_time % 10);
-    	tx_str(tx_buf);
-
 
     	u16 newton_time = meas_sqrt_time(pfft_arr, isqrt_newton);
     	sprintf(tx_buf, "newton_time = %d.%d ms\n\n\r", newton_time / 10,
@@ -170,12 +164,19 @@ int main(void)
     	sprintf(tx_buf, "binary_time = %d.%d ms\n\n\r", binary_time / 10,
     													binary_time % 10);
     	tx_str(tx_buf);
-//
+
     	wait_com_uart();
     	tx_str("\rADC meas:\r\n");
     	for (u16 i = 0; i < MEAS_NUM; i++)
     	{
     		sprintf(tx_buf, "%d\r\n", volts[i]);
+    		tx_str(tx_buf);
+    	}
+    	wait_com_uart();
+    	tx_str("\rFFT calc:\r\n");
+    	for (u16 i = 0; i < MEAS_NUM; i++)
+    	{
+    		sprintf(tx_buf, "%d%;%d\r\n", pfft_arr[i].re, pfft_arr[i].im);
     		tx_str(tx_buf);
     	}
     }

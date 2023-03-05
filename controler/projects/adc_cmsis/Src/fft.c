@@ -5,26 +5,32 @@
  *      Author: shishel
  */
 #include "fft.h"
-//#include "fft_table.h"
+
 
 static u16 reverse(u16 byte, const u8 revers_shift);
-void fft(const t_complex* pin_vect, t_complex* res);
+void fft(const u8* pin_vect, t_complex* res);
 // tmp = A - B * W / 100
 static t_complex fft_second_op(const t_complex* 	pfirst,  // A
 							   const t_complex* 	psecond, // B
-							   const t_complex_s8*  pw);	 // W
+							   const t_complex_s8*  pw		 // W
+							   );
 // tmp = A + B * W / 100
 static t_complex fft_first_op(const t_complex*    pfirst,  // A
 							  const t_complex*    psecond, // B
-							  const t_complex_s8* pw);     // W
+							  const t_complex_s8* pw	   // W
+							  );
 
+static const t_complex_s8* fft_table(t_complex_s8* return_val,
+									 const u16 base,
+									 const u16 group_size
+									 );
 
 t_complex* make_fft(u8* pinput_arr, t_complex* res_arr)
 {
-	t_complex input_arr_cmplx[MEAS_NUM] = { 0 };
-	for (u16 i = 0; i < MEAS_NUM; i++)
-		input_arr_cmplx[i].re = pinput_arr[i];
-	fft(input_arr_cmplx, res_arr);
+	// t_complex_s8 input_arr_cmplx[MEAS_NUM] = { 0 };
+	// for (u16 i = 0; i < MEAS_NUM; i++)
+	// 	input_arr_cmplx[i].re = pinput_arr[i];
+	fft(pinput_arr, res_arr);
 	return res_arr;
 }
 
@@ -71,27 +77,11 @@ u16 isqrt_binary(u32 val)
     return (u16)res;
 }
 
-u16 isqrt_linear(u32 val)
-{
-	u32 res = 0;
-	u32 a = 1;
-	u32 d = 3;
 
-	while (a <= val)
-	{
-		a 	= a + d;	// (a + 1) ^ 2
-		d 	= d + 2;
-		res = res + 1;
-	}
-
-	return (u16)res;
-}
-
-
-
-void fft(const t_complex* pin_vect, t_complex* res)
+void fft(const u8* pin_vect, t_complex* res)
 {
 	const t_complex_s8* pcplx_w;
+	t_complex_s8 cplx_w = {0, 0};
 	t_complex cplx_temp1 = {0, 0};
 	t_complex cplx_temp2 = {0, 0};
 	t_complex cplx_v1    = {0, 0};
@@ -107,14 +97,21 @@ void fft(const t_complex* pin_vect, t_complex* res)
         {
             for (u16 group_size = 0; group_size < base; group_size++)
             {
-                pcplx_w = fft_table(base * 2, group_size);
-                indx_1  = (group * base_widlth) + group_size;
-                indx_2  = indx_1 + base;
+            	/* Can be changed to
+            	 * pcplx_w.re     =  cos(PI * group_size / base) * 100;
+            	 * pcplx_w.im     = -sin(PI * group_size / base) * 100;
+            	 */
+            	pcplx_w = fft_table(&cplx_w, base * 2, group_size);
+                if (pcplx_w == NULL)
+                	return; // todo: make error msg
+                
+                indx_1 = (group * base_widlth) + group_size;
+                indx_2 = indx_1 + base;
 
                 if (!step)
                 {
-                    cplx_temp1.re = pin_vect[ reverse(indx_1, FFT_REVERS_SHIFT) ].re;
-                    cplx_temp2.re = pin_vect[ reverse(indx_2, FFT_REVERS_SHIFT) ].re;
+                    cplx_temp1.re = (s16) pin_vect[ reverse(indx_1, FFT_REVERS_SHIFT) ];
+                    cplx_temp2.re = (s16) pin_vect[ reverse(indx_2, FFT_REVERS_SHIFT) ];
                     cplx_v1 = fft_first_op (&cplx_temp1, &cplx_temp2, pcplx_w);
                     cplx_v2 = fft_second_op(&cplx_temp1, &cplx_temp2, pcplx_w);
                 } else
@@ -165,5 +162,27 @@ u16 reverse(u16 byte, const u8 revers_shift)
 	byte = ( ((byte & 0xcccc) >> 2) | ((byte & 0x3333) << 2) );
 	byte = ( ((byte & 0xf0f0) >> 4) | ((byte & 0x0f0f) << 4) );
 	return ( (byte >> 8) | (byte << 8) ) >> (revers_shift);
+}
+
+
+const t_complex_s8* fft_table(t_complex_s8* return_val, const u16 base, const u16 group_size)
+{
+	u16 index_fft_arr = group_size * (MEAS_NUM / base);
+
+	if (index_fft_arr > (MEAS_NUM >> 1))
+		return NULL;
+	else if (index_fft_arr < (MEAS_NUM >> 2))
+	{
+		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr];
+		return_val->re = from_table->re;
+		return_val->im = from_table->im;
+	}
+	else if (index_fft_arr >= (MEAS_NUM >> 2))
+	{
+		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr - (MEAS_NUM >> 2)];
+		return_val->re = from_table->im;
+		return_val->im = -from_table->re;
+	}
+	return return_val;
 }
 

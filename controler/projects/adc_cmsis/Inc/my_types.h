@@ -9,8 +9,9 @@
 #define MY_TYPES_H_
 
 #include <stdint.h>
+#include <stddef.h> // for NULL
 
-#define MEAS_POW2    6
+#define MEAS_POW2    11
 #define MEAS_NUM 	 (1 << MEAS_POW2) // Number of ADC measurements
 //- Coding defines -----------------------------------------------------------
 
