@@ -122,19 +122,21 @@ void spi1_write(u16* pdata)
 	ON_PA6();
 }
 
+t_complex _fft_arr[MEAS_NUM] = { 0 }; // move to main just for mem analyses
+u8 _some_arr[MEAS_NUM] = { 0 }; // move to main just for mem analyses
 
 int main(void)
 {
 	init_device();
 
-	delay(10000000);
-	u8 some_arr[MEAS_NUM] = { 0 };
-	u8* volts = some_arr;
+	delay(1000000);
+
+	u8* volts = _some_arr;
 	make_adc = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
-	t_complex fft_arr[MEAS_NUM] = { 0 };
-	t_complex* pfft_arr = fft_arr;
+
+	t_complex* pfft_arr = _fft_arr;
 	u16 stopwatch = 0;
 	com_receive = 0;
 
@@ -142,14 +144,14 @@ int main(void)
     {
     	tx_str("Start_measrumrnts\r\n");
     	START_TIM3();
-    	volts = make_meas_adc(volts, MEAS_NUM, 40);
+    	volts = make_meas_adc(volts, MEAS_NUM, 25);
     	stopwatch = take_tim3_val();
     	sprintf(tx_buf, "ADC meas time = %d.%d ms\n\n\r", stopwatch / 10,
     												 	  stopwatch % 10);
     	tx_str(tx_buf);
 
     	START_TIM3();
-    	pfft_arr = make_fft(volts, fft_arr);
+    	pfft_arr = make_fft(volts, pfft_arr);
     	stopwatch = take_tim3_val();
     	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
     													  stopwatch % 10);
