@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#define MEAS_POW2    10
+#define MEAS_POW2    12
 #define MEAS_NUM     (1 << MEAS_POW2) // Number of ADC measurements
 #define PI 3.1415926535897932384626433832795
 #define IS_FULL      0
@@ -16,6 +16,10 @@ int main() {
     {
         int8_t A = cos(PI * group_size / base) * 100;
         int8_t B = -sin(PI * group_size / base) * 100;
+        int16_t A_16 = A << 6;
+        int16_t B_16 = B << 6;
+        A = A_16 / 100;
+        B = B_16 / 100;
         if (base == MEAS_NUM >> 1)
         {
             if (IS_FULL == 1)

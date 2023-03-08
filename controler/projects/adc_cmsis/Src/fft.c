@@ -9,19 +9,6 @@
 
 static u16 reverse(u16 byte);
 void fft(const u8* pin_vect, t_complex* res);
-// tmp = A - B * W / 64
-static void fft_second_op(t_complex* 			presult, // result
-						  const t_complex*		pfirst,  // A
-						  const t_complex* 	   	psecond, // B
-						  const t_complex_s8*	pw		 // W
-						  );
-// tmp = A + B * W / 64
-static void fft_first_op(t_complex* 		 presult, // result
-						 const t_complex*    pfirst,  // A
-						 const t_complex*    psecond, // B
-						 const t_complex_s8* pw	   // W
-						 );
-
 static const t_complex_s8* fft_table(t_complex_s8* return_val,
 									 const u16 base,
 									 const u16 group_size
@@ -43,7 +30,7 @@ u16 isqrt_newton(u32 val)
 	// Zero yields zero
     // One yields one
 	if (val <= 1)
-		return val;
+		return (u16)val;
 
     // Initial estimate (must be too high)
 	u32 x0 = val >> 1;
@@ -84,10 +71,18 @@ void fft(const u8* pin_vect, t_complex* res)
 {
 	const t_complex_s8* pcplx_w;
 	t_complex_s8 cplx_w = {0, 0};
-	t_complex cplx_temp1 = {0, 0};
-	t_complex cplx_temp2 = {0, 0};
-	t_complex cplx_v1    = {0, 0};
-	t_complex cplx_v2    = {0, 0};
+
+	t_complex cplx_v1 	= {0, 0};
+	t_complex cplx_v2 	= {0, 0};
+
+	const t_complex* pres_indx_1;
+	const t_complex* pres_indx_2;
+
+	s16 butterfly_mult_re = 0;
+	s16 butterfly_mult_im = 0;
+
+	s16 svolt_1 = 0, svolt_2 = 0;
+
 	u16 base = 0, base_widlth = 0;
 	u16 indx_1 = 0, indx_2 = 0;
 
@@ -103,63 +98,42 @@ void fft(const u8* pin_vect, t_complex* res)
             	 * pcplx_w.re     =  cos(PI * group_size / base) * 100;
             	 * pcplx_w.im     = -sin(PI * group_size / base) * 100;
             	 */
-            	pcplx_w = fft_table(&cplx_w, base * 2, group_size);
-//                if (pcplx_w == NULL)
-//                	return; // todo: make error msg
-                
+
                 indx_1 = (group * base_widlth) + group_size;
                 indx_2 = indx_1 + base;
 
                 if (!step)
                 {
-                    cplx_temp1.re = (s16) pin_vect[ reverse(indx_1) ];
-                    cplx_temp2.re = (s16) pin_vect[ reverse(indx_2) ];
-                    fft_first_op (&cplx_v1, &cplx_temp1, &cplx_temp2, pcplx_w);
-                    fft_second_op(&cplx_v2, &cplx_temp1, &cplx_temp2, pcplx_w);
+                	// for this part pcplx_w always the same = {64 , 0} or {1, 0} cos(0) sin(0)
+                	svolt_1 = pin_vect[ reverse(indx_1) ];
+                	svolt_2 = pin_vect[ reverse(indx_2) ];
+                	cplx_v1.re = svolt_1 + svolt_2; // first op
+                    cplx_v2.re = svolt_1 - svolt_2; // second op
                 } else
                 {
-	                fft_first_op (&cplx_v1, &res[indx_1], &res[indx_2], pcplx_w);
-	                fft_second_op(&cplx_v2, &res[indx_1], &res[indx_2], pcplx_w);
+                	pcplx_w = fft_table(&cplx_w, base << 1, group_size);
+
+                	pres_indx_1 = res + indx_1; // A
+                	pres_indx_2 = res + indx_2; // B
+                	// B * W / 64
+                	butterfly_mult_re = ( (pres_indx_2->re * (s16)pcplx_w->re) - (pres_indx_2->im * (s16)pcplx_w->im) ) >> 6;
+                	butterfly_mult_im = ( (pres_indx_2->re * (s16)pcplx_w->im) + (pres_indx_2->im * (s16)pcplx_w->re) ) >> 6;
+                	// tmp = A + B * W / 64
+                	cplx_v1.re = pres_indx_1->re + butterfly_mult_re;
+                	cplx_v1.im = pres_indx_1->im + butterfly_mult_im;
+                	// tmp = A - B * W / 64
+                	cplx_v2.re = pres_indx_1->re - butterfly_mult_re;
+                	cplx_v2.im = pres_indx_1->im - butterfly_mult_im;
                 }
 
                 res[indx_1] = cplx_v1;
                 res[indx_2] = cplx_v2;
-                cplx_v1.re = 0; cplx_v1.im = 0;
-                cplx_v2.re = 0; cplx_v2.im = 0;
             }
         }
     }
 }
 
-
-// tmp = A + B * W / 64
-void fft_first_op(t_complex* 	      presult, // result
-				  const t_complex*    pfirst,  // A
-				  const t_complex*    psecond, // B
-				  const t_complex_s8* pw)      // W
-{
-	presult->re = (  ( (psecond->re * (s16)pw->re)
-					 - (psecond->im * (s16)pw->im) ) >> 6  ) + pfirst->re;
-
-	presult->im = (  ( (psecond->re * (s16)pw->im)
-				     + (psecond->im * (s16)pw->re) ) >> 6  ) + pfirst->im;
-}
-
-
-// tmp = A - B * W / 64
-void fft_second_op(t_complex* 	        presult, // result
-				   const t_complex* 	pfirst,  // A
-				   const t_complex* 	psecond, // B
-				   const t_complex_s8*  pw)	   // W
-{
-	presult->re = pfirst->re - (  ( (psecond->re * (s16)pw->re)
-								  - (psecond->im * (s16)pw->im) ) >> 6  );
-
-	presult->im = pfirst->im - (  ( (psecond->re * (s16)pw->im)
-								  + (psecond->im * (s16)pw->re) ) >> 6  );
-}
-
-
+// can be speed up
 u16 reverse(u16 byte)
 {
 	byte = ( ((byte & 0xaaaa) >> 1) | ((byte & 0x5555) << 1) );
@@ -168,13 +142,10 @@ u16 reverse(u16 byte)
 	return ( (byte >> 8) | (byte << 8) ) >> (FFT_REVERS_SHIFT);
 }
 
-
+// can be speed up
 const t_complex_s8* fft_table(t_complex_s8* return_val, const u16 base, const u16 group_size)
 {
-	u16 index_fft_arr = group_size * (MEAS_NUM / base);
-
-//	if (index_fft_arr > (MEAS_NUM >> 1))
-//		return NULL; make + 2 ms
+	const u16 index_fft_arr = group_size * (MEAS_NUM / base);
 	if (index_fft_arr < (MEAS_NUM >> 2))
 	{
 		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr];
