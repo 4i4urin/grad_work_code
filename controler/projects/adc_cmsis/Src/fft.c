@@ -25,25 +25,25 @@ t_complex* make_fft(u8* pinput_arr, t_complex* res_arr)
 
 
 // Square root of integer
-u16 isqrt_newton(u32 val)
+u16 isqrt_newton(const u32 val)
 {
 	// Zero yields zero
     // One yields one
 	if (val <= 1)
-		return (u16)val;
+		return (u16) val;
 
     // Initial estimate (must be too high)
-	u32 x0 = val >> 1;
+	register u32 x0 = val >> 1;
 
 	// Update
-	u32 x1 = (x0 + val / x0) >> 1;
+	register u32 x1 = (x0 + val / x0) >> 1;
 
 	while (x1 < x0)	// Bound check
 	{
 		x0 = x1;
 		x1 = (x0 + val / x0) >> 1;
 	}
-	return (u16)x0;
+	return (u16) x0;
 }
 
 
@@ -82,11 +82,24 @@ void fft(const u8* pin_vect, t_complex* res)
 	s16 butterfly_mult_im = 0;
 
 	s16 svolt_1 = 0, svolt_2 = 0;
-
 	u16 base = 0, base_widlth = 0;
-	u16 indx_1 = 0, indx_2 = 0;
 
-    for (u8 step = 0; step < MEAS_POW2; step++)
+	register u16 indx_1 = 0, indx_2 = 0;
+	// circle for step = 0 move values from pin_vect to res
+	for (u16 group = 0; group < MEAS_NUM >> 1 ; group++ ) // inf loop
+	{
+		indx_1 = (group * 2);
+        indx_2 = indx_1 + 1;
+        // for this part pcplx_w always the same = {64 , 0} or {1, 0} cos(0) sin(0)
+        svolt_1 = pin_vect[ reverse(indx_1) ];
+        svolt_2 = pin_vect[ reverse(indx_2) ];
+        cplx_v1.re = svolt_1 + svolt_2; // first op
+        cplx_v2.re = svolt_1 - svolt_2; // second op
+        res[indx_1] = cplx_v1;// it make fft faster
+        res[indx_2] = cplx_v2;
+	}
+
+    for (u8 step = 1; step < MEAS_POW2; step++)
     {
         base  = 1 << step;
         base_widlth = 1 << ( step + 1 );
@@ -94,37 +107,25 @@ void fft(const u8* pin_vect, t_complex* res)
         {
             for (u16 group_size = 0; group_size < base; group_size++)
             {
-            	/* Can be changed to
-            	 * pcplx_w.re     =  cos(PI * group_size / base) * 100;
-            	 * pcplx_w.im     = -sin(PI * group_size / base) * 100;
-            	 */
-
                 indx_1 = (group * base_widlth) + group_size;
                 indx_2 = indx_1 + base;
 
-                if (!step)
-                {
-                	// for this part pcplx_w always the same = {64 , 0} or {1, 0} cos(0) sin(0)
-                	svolt_1 = pin_vect[ reverse(indx_1) ];
-                	svolt_2 = pin_vect[ reverse(indx_2) ];
-                	cplx_v1.re = svolt_1 + svolt_2; // first op
-                    cplx_v2.re = svolt_1 - svolt_2; // second op
-                } else
-                {
-                	pcplx_w = fft_table(&cplx_w, base << 1, group_size);
+//            	Can be changed to
+//            	pcplx_w.re     =  cos(PI * group_size / base) * 100;
+//            	pcplx_w.im     = -sin(PI * group_size / base) * 100;
+            	pcplx_w = fft_table(&cplx_w, base << 1, group_size);
 
-                	pres_indx_1 = res + indx_1; // A
-                	pres_indx_2 = res + indx_2; // B
-                	// B * W / 64
-                	butterfly_mult_re = ( (pres_indx_2->re * (s16)pcplx_w->re) - (pres_indx_2->im * (s16)pcplx_w->im) ) >> 6;
-                	butterfly_mult_im = ( (pres_indx_2->re * (s16)pcplx_w->im) + (pres_indx_2->im * (s16)pcplx_w->re) ) >> 6;
-                	// tmp = A + B * W / 64
-                	cplx_v1.re = pres_indx_1->re + butterfly_mult_re;
-                	cplx_v1.im = pres_indx_1->im + butterfly_mult_im;
-                	// tmp = A - B * W / 64
-                	cplx_v2.re = pres_indx_1->re - butterfly_mult_re;
-                	cplx_v2.im = pres_indx_1->im - butterfly_mult_im;
-                }
+            	pres_indx_1 = res + indx_1; // A
+            	pres_indx_2 = res + indx_2; // B
+            	// B * W / 64
+            	butterfly_mult_re = ( (pres_indx_2->re * (s16)pcplx_w->re) - (pres_indx_2->im * (s16)pcplx_w->im) ) >> 6;
+            	butterfly_mult_im = ( (pres_indx_2->re * (s16)pcplx_w->im) + (pres_indx_2->im * (s16)pcplx_w->re) ) >> 6;
+            	// tmp = A + B * W / 64
+            	cplx_v1.re = pres_indx_1->re + butterfly_mult_re;
+            	cplx_v1.im = pres_indx_1->im + butterfly_mult_im;
+            	// tmp = A - B * W / 64
+            	cplx_v2.re = pres_indx_1->re - butterfly_mult_re;
+            	cplx_v2.im = pres_indx_1->im - butterfly_mult_im;
 
                 res[indx_1] = cplx_v1;
                 res[indx_2] = cplx_v2;
