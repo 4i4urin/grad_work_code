@@ -18,7 +18,7 @@
 
 u8 com_receive;
 //u8 rx_buf[MAX_STR_SIZE];
-u8 make_adc;
+u8 tim4_enable;
 
 
 
@@ -83,7 +83,7 @@ void USART2_IRQHandler(void)
 void TIM4_IRQHandler()
 {
 	TIM4->SR &= ~TIM_SR_UIF; // drop update flag
-	make_adc = 1;
+	tim4_enable = 1;
 }
 
 
@@ -122,21 +122,25 @@ void spi1_write(u16* pdata)
 	ON_PA6();
 }
 
-t_complex _fft_arr[MEAS_NUM] = { 0 }; // move to main just for mem analyses
-u8 _some_arr[MEAS_NUM] = { 0 }; // move to main just for mem analyses
+
 
 int main(void)
 {
+	// req max 14 kB memory (then fft work)
 	init_device();
 
 	delay(1000000);
 
-	u8* volts = _some_arr;
-	make_adc = 0;
+	u8 volts[MEAS_NUM] = { 0 };
+	u16 fft_abs[MEAS_NUM / 2] = { 0 };
+
+	u8* pvolts = volts;
+	tim4_enable = 0;
 
 	char tx_buf[MAX_STR_SIZE] = { 0 };
 
-	t_complex* pfft_arr = _fft_arr;
+	u16* pfft_abs = fft_abs;
+
 	u16 stopwatch = 0;
 	com_receive = 0;
 
@@ -144,27 +148,17 @@ int main(void)
     {
     	tx_str("Start_measrumrnts\r\n");
     	START_TIM3();
-    	volts = make_meas_adc(volts, MEAS_NUM, 25);
+    	pvolts = make_meas_adc(pvolts, MEAS_NUM, 30);
     	stopwatch = take_tim3_val();
     	sprintf(tx_buf, "ADC meas time = %d.%d ms\n\n\r", stopwatch / 10,
     												 	  stopwatch % 10);
     	tx_str(tx_buf);
 
     	START_TIM3();
-    	pfft_arr = make_fft(volts, pfft_arr);
+    	pfft_abs = make_fft_abs(pfft_abs, pvolts);
     	stopwatch = take_tim3_val();
     	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
     													  stopwatch % 10);
-    	tx_str(tx_buf);
-
-    	u16 newton_time = meas_sqrt_time(pfft_arr, isqrt_newton);
-    	sprintf(tx_buf, "newton_time = %d.%d ms\n\n\r", newton_time / 10,
-    												 	newton_time % 10);
-    	tx_str(tx_buf);
-
-    	u16 binary_time = meas_sqrt_time(pfft_arr, isqrt_binary);
-    	sprintf(tx_buf, "binary_time = %d.%d ms\n\n\r", binary_time / 10,
-    													binary_time % 10);
     	tx_str(tx_buf);
 
     	wait_com_uart();
@@ -176,9 +170,9 @@ int main(void)
     	}
     	wait_com_uart();
     	tx_str("\rFFT calc:\r\n");
-    	for (u16 i = 0; i < MEAS_NUM; i++)
+    	for (u16 i = 0; i < MEAS_NUM / 2; i++)
     	{
-    		sprintf(tx_buf, "%d%;%d\r\n", pfft_arr[i].re, pfft_arr[i].im);
+    		sprintf(tx_buf, "%d\r\n", pfft_abs[i]);
     		tx_str(tx_buf);
     	}
     }
@@ -194,20 +188,6 @@ u16 take_tim3_val(void)
 }
 
 
-
-u32 meas_sqrt_time(const t_complex* pcplx_arr, u16 (*pfsqrt)(u32))
-{
-	u16 sqrt_res[MEAS_NUM / 2] = { 0 };
-
-	START_TIM3();
-    for (u16 i = 0; i < MEAS_NUM / 2; i++)
-    	sqrt_res[i] = (u16) pfsqrt( pcplx_arr[i].re * pcplx_arr[i].re
-    							  + pcplx_arr[i].im * pcplx_arr[i].im);
-
-    return take_tim3_val();
-}
-
-
 void wait_com_uart(void)
 {
 	while ( !com_receive) {};
@@ -220,9 +200,9 @@ u8* make_meas_adc(u8* parr, u16 size, u16 kHz)
 	start_tim4_khz(kHz);
 	for(u16 i = 0; i < size; i++)
 	{
-		while ( !make_adc) {};
+		while ( !tim4_enable) {};
 		parr[i] = read_adc() >> 4;
-		make_adc = 0;
+		tim4_enable = 0;
 	}
 	STOP_TIM4();
 	return parr;

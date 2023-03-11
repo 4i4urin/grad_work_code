@@ -14,13 +14,22 @@ static const t_complex_s8* fft_table(t_complex_s8* return_val,
 									 const u16 group_size
 									 );
 
-t_complex* make_fft(u8* pinput_arr, t_complex* res_arr)
+t_complex* make_fft(const u8* pinput_arr, t_complex* fft_res)
 {
-	// t_complex_s8 input_arr_cmplx[MEAS_NUM] = { 0 };
-	// for (u16 i = 0; i < MEAS_NUM; i++)
-	// 	input_arr_cmplx[i].re = pinput_arr[i];
-	fft(pinput_arr, res_arr);
-	return res_arr;
+	fft(pinput_arr, fft_res);
+	return fft_res;
+}
+
+
+// req MEAS_NUM * 4 byte memory
+u16* make_fft_abs(u16* abs_fft, const u8* pinput_arr)
+{
+	t_complex fft_res[MEAS_NUM] = { 0 };
+	fft(pinput_arr, fft_res);
+	for (u16 i = 0; i < MEAS_NUM / 2; i++)
+		abs_fft[i] = (u16) isqrt_newton( fft_res[i].re * fft_res[i].re
+	    						       + fft_res[i].im * fft_res[i].im);
+	return abs_fft;
 }
 
 
@@ -44,26 +53,6 @@ u16 isqrt_newton(const u32 val)
 		x1 = (x0 + val / x0) >> 1;
 	}
 	return (u16) x0;
-}
-
-
-u16 isqrt_binary(u32 val)
-{
-	u32 res = 0;
-	u32 M = 0;
-	u32 R = val + 1;
-
-    while (res != R - 1)
-    {
-        M = (res + R) >> 1;
-
-		if (M * M <= val)
-			res = M;
-		else
-			R = M;
-	}
-
-    return (u16)res;
 }
 
 
