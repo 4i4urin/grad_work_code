@@ -1,33 +1,13 @@
 /*
- * my_types.h
+ * project_types.h
  *
- *  Created on: 2 march 2023 г.
+ *  Created on: Mar 20, 2023
  *      Author: shishel
  */
 
-#ifndef MY_TYPES_H_
-#define MY_TYPES_H_
+#ifndef PROJECT_TYPES_H_
+#define PROJECT_TYPES_H_
 
-#include <stdint.h>
-
-#define MEAS_POW2    11
-#define MEAS_NUM 	 (1 << MEAS_POW2) // Number of ADC measurements
-//- Coding defines -----------------------------------------------------------
-
-#define u8 		uint8_t
-#define u16 	uint16_t
-#define u32		uint32_t
-
-#define s8 		int8_t
-#define s16		int16_t
-#define s32		int32_t
-
-#define BITS_U16 	16
-#define BITS_U8 	8
-
-//----------------------------------------------------------------------------
-
-void delay(u32 del_val);
 
 #pragma pack(push, 1)
 
@@ -59,6 +39,7 @@ typedef struct _t_dpot_send
 
 #pragma pack(pop)
 
+
 // types for fft
 typedef struct _t_complex
 {
@@ -73,4 +54,5 @@ typedef struct _t_complex_s8
     s8 im;
 } t_complex_s8;
 
-#endif /* MY_TYPES_H_ */
+
+#endif /* PROJECT_TYPES_H_ */
