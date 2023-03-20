@@ -8,6 +8,8 @@
 #ifndef COLOR_MUSICAL_ILLUM_H_
 #define COLOR_MUSICAL_ILLUM_H_
 
+#include <string.h>
+#include <ctype.h>
 
 #include "project_def.h"
 #include "project_types.h"
