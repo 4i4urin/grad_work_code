@@ -5,6 +5,7 @@
  *      Author: shishel
  */
 #include "color_musical_illum.h"
+#include "digital_pot.h"
 
 
 static u8 reverse_8(u8 byte);
@@ -19,13 +20,22 @@ u8 reverse_8(u8 byte)
 }
 
 
-void send_dpot(u8 res_byte)
+void send_res_dpot(u8 resistance)
 {
+	if (resistance > MAX_DPOT_RES)
+		resistance = MAX_DPOT_RES;
+
 	t_dpot_send msg;
-	msg.hdr.comm = E_DPOT_COM_WRITE;
-	msg.hdr.ch_select = 0x01; // 0x01 - from 0 to 52k Ohm
-							  // 0x02, 0x00 - do not work
-							  // 0x03 - from 52 kOhm to 104 kOhm
+	msg.hdr.comm	  = E_DPOT_COM_WRITE;
+	msg.hdr.ch_select = (resistance <= MID_DPOT_RES)
+					    ? E_DPOT_CS_RANGE_LOW
+					    : E_DPOT_CS_RANGE_HIGH;
+	resistance = (resistance <= MID_DPOT_RES)
+				 ? resistance
+				 : resistance - MID_DPOT_RES;
+
+	u8 res_byte = resistance * 0xFF / MID_DPOT_RES;
+
 	msg.data = reverse_8(res_byte);
 	spi1_write((u16*)&msg);
 }

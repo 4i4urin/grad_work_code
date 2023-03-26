@@ -60,9 +60,9 @@ int main(void)
 	while (1)
 	{
 		ON_PB1();
-		for (int i = 0; i < 0xFF; i += 10)
+		for (u8 i = 0; i < 120; i += 10)
 		{
-			send_dpot(i);
+			send_res_dpot(i);
 			delay(10000000);
 		}
 		delay(1000000);
