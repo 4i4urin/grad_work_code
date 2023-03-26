@@ -15,17 +15,17 @@
 typedef enum _e_dpot_comm
 {
 	E_DPOT_COM_NONE = 0x00,
-	E_DPOT_COM_SHUTD = 0x01,
-	E_DPOT_COM_WRITE = 0x02,
+	E_DPOT_COM_WRITE = 0x01,
+	E_DPOT_COM_SHUTD = 0x02,
 	E_DPOT_COM_NONE_2 = 0x03
 } e_dpot_comm;
 
 
 typedef struct _t_dpot_hdr
 {
-	u8 		 	    db_1 : 2; // don't care bits
+	u8 		 	    	 : 2; // don't care bits
 	e_dpot_comm 	comm : 2; // command bits
-	u8 	  			db_2 : 2; // don't care bits
+	u8 	  				 : 2; // don't care bits
 	u8  	   ch_select : 2;// channel select
 } t_dpot_hdr;
 

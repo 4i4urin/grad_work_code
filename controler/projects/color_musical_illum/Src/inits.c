@@ -19,7 +19,7 @@ void init_device(void)
 {
 	init_clk();
 //	init_adc();
-	init_usart3();
+//	init_usart3();
 	init_spi();
 	//init_tim3();
 	init_led_pb1();
@@ -32,39 +32,26 @@ void init_led_pb1(void)
 
 	GPIOB->CRL |= GPIO_CRL_MODE1;
 	GPIOB->CRL &= ~(GPIO_CRL_CNF1);
-
-	// PB3 PB4 PB5
-	GPIOB->CRL |= GPIO_CRL_MODE3;
-	GPIOB->CRL &= ~(GPIO_CRL_CNF3);
-
-	GPIOB->CRL |= GPIO_CRL_MODE4;
-	GPIOB->CRL &= ~(GPIO_CRL_CNF4);
-
-	GPIOB->CRL |= GPIO_CRL_MODE5;
-	GPIOB->CRL &= ~(GPIO_CRL_CNF5);
 }
 
 
 void init_spi(void)
 {
 	// SPI1 + remap
-	// PB3 - SCK  	PA5 D13
-	// PB4 - ~CS 	PA6 D12
-	// PB5 - SI - MOSI PA7 D11
-	// f clk = 10Mhz
+	// PB3 - SCK
+	// PB4 - ~CS
+	// PB5 - SI
 	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // SPI clocking
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN; // ports alternative function clocking
 	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN; // PB clocking
-//	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; // PA clocking
+
+	AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE; // free PB3 PB4 from Jtag
+	AFIO->MAPR |= AFIO_MAPR_SPI1_REMAP; // remap spi1 to PB3, pb4, pb5
 
 	GPIOB->CRL |= GPIO_CRL_MODE3; // init PB3 50 Mhz, alt func push pull
 	GPIOB->CRL &= ~(GPIO_CRL_CNF3);
 	GPIOB->CRL |= GPIO_CRL_CNF3_1;
-//
-//	GPIOB->CRL |= GPIO_CRL_MODE4; // init PB4 50 Mhz, alt func push pull
-//	GPIOB->CRL &= ~(GPIO_CRL_CNF4);
-//	GPIOB->CRL |= GPIO_CRL_CNF4_1;
-//
+
 	GPIOB->CRL |= GPIO_CRL_MODE4;
 	GPIOB->CRL &= ~(GPIO_CRL_CNF4);  // general purpose
 
@@ -72,30 +59,12 @@ void init_spi(void)
 	GPIOB->CRL &= ~(GPIO_CRL_CNF5);
 	GPIOB->CRL |= GPIO_CRL_CNF5_1;
 
-//	GPIOA->CRL |= GPIO_CRL_MODE5; // init PB3 50 Mhz, alt func push pull
-//	GPIOA->CRL &= ~(GPIO_CRL_CNF5);
-//	GPIOA->CRL |= GPIO_CRL_CNF5_1;
-
-//	GPIOA->CRL |= GPIO_CRL_MODE6; // init PB4 50 Mhz, alt func push pull
-//	GPIOA->CRL &= ~(GPIO_CRL_CNF6);
-//	GPIOA->CRL |= GPIO_CRL_CNF6_1;
-
-//	GPIOA->CRL |= GPIO_CRL_MODE6;
-//	GPIOA->CRL &= ~(GPIO_CRL_CNF6); // general purpose
-
-
-//	GPIOA->CRL |= GPIO_CRL_MODE7; // init PB5 50 Mhz, alt func push pull
-//	GPIOA->CRL &= ~(GPIO_CRL_CNF7);
-//	GPIOA->CRL |= GPIO_CRL_CNF7_1;
-
-	AFIO->MAPR |= AFIO_MAPR_SPI1_REMAP; // remap spi1 to PB3, pb4, pb5
 
 	SPI1->CR1 |= SPI_CR1_LSBFIRST; // LSB
 	SPI1->CR1 &= ~(SPI_CR1_BR);
-	SPI1->CR1 |= SPI_CR1_BR_1 | SPI_CR1_BR_2; // 010 = f MCU / 8 = 8Mhz
+	SPI1->CR1 |= SPI_CR1_BR_1; // 010 = f MCU / 8 = 8Mhz
 	SPI1->CR1 |= SPI_CR1_MSTR; // master mode
-	//SPI1->CR1 |= SPI_CR1_CPOL; // idel is 1
-	SPI1->CR1 |= SPI_CR1_BIDIMODE; // transmit only mode
+
 	SPI1->CR1 |= SPI_CR1_CPHA;
 	SPI1->CR1 &= ~(SPI_CR1_DFF);
 	SPI1->CR1 |= SPI_CR1_DFF; // 16 bit to send
@@ -133,14 +102,14 @@ void init_usart3(void)
 	GPIOB->CRH |= GPIO_CRH_CNF11_0;
 
 	/*****************************************
-	Скорость передачи данных - 115200
+	Скорость передачи данных - 115200 / 9600
 	Частота шины APB1 - 32МГц
 	1. USARTDIV = 32'000'000/(16*115200) = 17.4
-	2. 17 = 0x11
+	2. 17 = 0x11 .. 0xD0
 	3. 16*0.4 = 6
-	4. Итого 0x116
+	4. Итого 0x116 .. 0xD06
 	*****************************************/
-	USART3->BRR = 0x116;
+	USART3->BRR = 0xD06;
 
 	USART3->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
 	USART3->CR1 |= USART_CR1_RXNEIE;						//разрешить прерывание по приему байта данных

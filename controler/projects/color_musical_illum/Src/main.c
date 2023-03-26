@@ -60,18 +60,15 @@ int main(void)
 	while (1)
 	{
 		ON_PB1();
-		ON_PB4();
-		ON_PB3();
-		ON_PB5();
-		send_dpot(0xFF);
+		for (int i = 0; i < 0xFF; i += 10)
+		{
+			send_dpot(i);
+			delay(10000000);
+		}
 		delay(1000000);
 		OFF_PB1();
-		OFF_PB4();
-		OFF_PB3();
-		OFF_PB5();
-		send_dpot(0x01);
 		delay(1000000);
-		tx_str("Fuck SPI\n");
+//		tx_str("FUCK\r\n");
 	}
 }
 
