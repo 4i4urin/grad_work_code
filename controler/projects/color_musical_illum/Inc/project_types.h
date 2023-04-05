@@ -23,7 +23,7 @@ typedef enum _e_dpot_comm
 
 typedef enum _e_dpot_chip_sel
 {
-	E_DPOT_CS_RANGE_LOW  = 0x01, // 0x01 - from 0 to 52k Ohm
+	E_DPOT_CS_RANGE_LOW  = 0x01,  // 0x01 - from 0 to 52k Ohm
 	E_DPOT_CS_RANGE_HIGH  = 0x03  // 0x03 - from 52 kOhm to 104 kOhm
 } e_dpot_chip_sel;
 
@@ -33,7 +33,7 @@ typedef struct _t_dpot_hdr
 	u8 		 	    	 	  : 2; // don't care bits
 	e_dpot_comm 		 comm : 2; // command bits
 	u8 	  				 	  : 2; // don't care bits
-	e_dpot_chip_sel ch_select : 2;// channel select
+	e_dpot_chip_sel ch_select : 2; // channel select
 } t_dpot_hdr;
 
 

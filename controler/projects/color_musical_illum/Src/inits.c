@@ -13,16 +13,44 @@ static void init_usart3(void);
 static void init_spi(void);
 static void init_tim3(void);
 static void init_led_pb1(void);
-
+static void init_led_power_controle(void);
+static void init_tim4(void);
 
 void init_device(void)
 {
 	init_clk();
-//	init_adc();
-//	init_usart3();
+	init_adc();
+	init_usart3();
 	init_spi();
-	//init_tim3();
+	init_tim3();
+	init_tim4();
 	init_led_pb1();
+	init_led_power_controle();
+}
+
+
+// timer for reading adc
+void init_tim4(void)
+{
+	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+
+	TIM4->PSC = TIM4_PSC - 1; // timer period 1 MHz
+	TIM4->DIER |= TIM_DIER_UIE; // enable interrupts by update
+	TIM4->CNT = 0;
+	TIM4->ARR = 0;
+
+	NVIC_EnableIRQ(TIM4_IRQn);				//Рарзрешить прерывание от TIM2
+	NVIC_SetPriority(TIM4_IRQn, 1);			//Выставляем приоритет
+}
+
+
+void init_led_power_controle(void)
+{
+	// PB7 just do ON and OFF
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+
+	GPIOB->CRL |= GPIO_CRL_MODE7_0; //  Output mode, max speed 10 MHz
+	GPIOB->CRL &= ~(GPIO_CRL_CNF7); //  General purpose output push-pull
 }
 
 
@@ -30,8 +58,8 @@ void init_led_pb1(void)
 {
 	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
 
-	GPIOB->CRL |= GPIO_CRL_MODE1;
-	GPIOB->CRL &= ~(GPIO_CRL_CNF1);
+	GPIOB->CRL |= GPIO_CRL_MODE1_0; //  Output mode, max speed 10 MHz
+	GPIOB->CRL &= ~(GPIO_CRL_CNF1); //  General purpose output push-pull
 }
 
 
@@ -58,7 +86,6 @@ void init_spi(void)
 	GPIOB->CRL |= GPIO_CRL_MODE5; // init PB5 50 Mhz, alt func push pull
 	GPIOB->CRL &= ~(GPIO_CRL_CNF5);
 	GPIOB->CRL |= GPIO_CRL_CNF5_1;
-
 
 	SPI1->CR1 |= SPI_CR1_LSBFIRST; // LSB
 	SPI1->CR1 &= ~(SPI_CR1_BR);
@@ -105,9 +132,9 @@ void init_usart3(void)
 	Скорость передачи данных - 115200 / 9600
 	Частота шины APB1 - 32МГц
 	1. USARTDIV = 32'000'000/(16*115200) = 17.4
-	2. 17 = 0x11 .. 0xD0
+	2. 17 = 0x11 / 0xD0
 	3. 16*0.4 = 6
-	4. Итого 0x116 .. 0xD06
+	4. Итого 0x116 / 0xD06
 	*****************************************/
 	USART3->BRR = 0xD06;
 
@@ -120,21 +147,20 @@ void init_usart3(void)
 
 void init_adc(void)
 {
-	// PA0 ADC1 in0
-	// gpio init PA0
+	// PA1 ADC1 in1
+	// gpio init PA1
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-	GPIOA->CRL &= ~(GPIO_CRL_CNF0); // 00 - analog mode
-	GPIOA->CRL &= ~(GPIO_CRL_MODE0); // 00 - input mode
+	GPIOA->CRL &= ~(GPIO_CRL_CNF1); // 00 - analog mode
+	GPIOA->CRL &= ~(GPIO_CRL_MODE1); // 00 - input mode
 
-	// ADC in0
+	// ADC in1
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
 
-	ADC1->SMPR2 &= ~(ADC_SMPR2_SMP0); // 000
-	ADC1->SMPR2 |= ADC_SMPR2_SMP0_2 | ADC_SMPR2_SMP0_1 | ADC_SMPR2_SMP0_0; // 111 - sample time = 239,5 cycles
+	ADC1->SMPR2 &= ~(ADC_SMPR2_SMP1); // 000
+	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0; // 111 - sample time = 239,5 cycles
 
 	ADC1->SQR1  &= ~(ADC_SQR1_L); 	// 1 conversion  // if was 0010 would be 3 conversion (require 3 channels)
-	ADC1->SQR3  &= ~(ADC_SQR3_SQ1); // 0 channel is first conversion in regular
-
+	ADC1->SQR3  |= ADC_SQR3_SQ1_0; // 1 channel is first conversion in regular
 
 	ADC1->CR2 |= ADC_CR2_CONT; // continuous mode //as fast as can
 	ADC1->CR1 &= ~(ADC_CR1_SCAN); // no scan mode
@@ -144,12 +170,11 @@ void init_adc(void)
 	// calibration
 	delay(DEL_ADC); // wait to stabilization adc
 	ADC1->CR2 |= ADC_CR2_CAL; // start calibration
-	while (ADC1->CR2 & ADC_CR2_CAL) ;// wait finish of calibration
-
+	while (ADC1->CR2 & ADC_CR2_CAL) { }// wait finish of calibration
 
 	ADC1->CR2 |= ADC_CR2_EXTTRIG; // enable conversion on external event
 	ADC1->CR2 |= ADC_CR2_EXTSEL;  // turn on by SWSTART
-	ADC1->CR2 |= ADC_CR2_SWSTART; // turn on
+//	ADC1->CR2 |= ADC_CR2_SWSTART; // turn on
 }
 
 

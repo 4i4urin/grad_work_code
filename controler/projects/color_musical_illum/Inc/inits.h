@@ -15,7 +15,7 @@
 #define MCU_FREQ		64000000 // 64 MHz
 
 
-#define DEL_ADC 		100
+#define DEL_ADC 		10000
 #define TIM4_FREQ 		1000000 // 1 MHz
 #define TIM4_PSC 		(MCU_FREQ / TIM4_FREQ)
 

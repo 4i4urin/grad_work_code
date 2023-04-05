@@ -10,12 +10,14 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "project_def.h"
 #include "project_types.h"
 
 
 #include "stm32f1xx.h"
+
 
 
 // just delay should be in whole project
