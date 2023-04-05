@@ -11,6 +11,15 @@
 
 #pragma pack(push, 1)
 
+
+typedef enum _e_device_state
+{
+	E_DEV_WORK   = 0x00,
+	E_DEV_SLEEP  = 0x01,
+	E_DEV_CALIB  = 0x02
+} e_device_state;
+
+
 // spi transmit to Dpot data structure
 typedef enum _e_dpot_comm
 {

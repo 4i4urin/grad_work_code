@@ -21,6 +21,7 @@
 
 
 #define TIM3_FREQ		10000 // 10 kHz
+#define TIM3_ARR		5000  // update every 0,5 sec
 #define TIM3_PSC 		(MCU_FREQ / TIM3_FREQ) // tic in 0,1 ms
 
 

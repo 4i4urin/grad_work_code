@@ -13,8 +13,10 @@ static void init_usart3(void);
 static void init_spi(void);
 static void init_tim3(void);
 static void init_led_pb1(void);
-static void init_led_power_controle(void);
+static void init_ctrl_led(void);
 static void init_tim4(void);
+static void init_buttons(void);
+
 
 void init_device(void)
 {
@@ -25,7 +27,34 @@ void init_device(void)
 	init_tim3();
 	init_tim4();
 	init_led_pb1();
-	init_led_power_controle();
+	init_ctrl_led();
+	init_buttons();
+}
+
+
+void init_buttons(void)
+{
+	// PB9 - OFF/ON device button
+	// PB15 - Change mode button
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
+
+	GPIOB->CRH &= ~(GPIO_CRH_CNF9 | GPIO_CRH_MODE9);
+	GPIOB->CRH &= ~(GPIO_CRH_CNF15 | GPIO_CRH_MODE15);
+
+	GPIOB->CRH |= (GPIO_CRH_CNF9_1 | GPIO_CRH_CNF15_1); // Input with pull-up / pull-down
+	GPIOB->BSRR |= (GPIO_BSRR_BS9 | GPIO_BSRR_BS15); // pull-up to Vdd
+
+	AFIO->EXTICR[2] |= AFIO_EXTICR3_EXTI9_PB;
+	AFIO->EXTICR[3] |= AFIO_EXTICR4_EXTI15_PB; // enable alternative func
+
+	EXTI->FTSR |= (EXTI_FTSR_FT9 | EXTI_FTSR_FT15); // Interrupt by falling edge
+	EXTI->IMR |= (EXTI_IMR_IM9 | EXTI_IMR_IM15); // enable exti
+
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
+	NVIC_SetPriority(EXTI9_5_IRQn, 0);
+
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	NVIC_SetPriority(EXTI15_10_IRQn, 1);
 }
 
 
@@ -44,7 +73,7 @@ void init_tim4(void)
 }
 
 
-void init_led_power_controle(void)
+void init_ctrl_led(void)
 {
 	// PB7 just do ON and OFF
 	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
@@ -101,13 +130,19 @@ void init_spi(void)
 }
 
 
-// timer for meas sqrt
+// timer for led
 void init_tim3(void)
 {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
 	TIM3->PSC = TIM3_PSC - 1; // timer period 10 kHz
 	TIM3->CNT = 0; //  tic in 0,1 ms
-	TIM3->ARR = (2 << 16) - 1; // max val
+	TIM3->ARR = TIM3_ARR; // max val
+
+	TIM3->DIER |= TIM_DIER_UIE; // enable interrupts by update
+
+	NVIC_EnableIRQ(TIM3_IRQn);
+	NVIC_SetPriority(TIM3_IRQn, 1);
+	TIM3->CR1 |= TIM_CR1_CEN;
 }
 
 
