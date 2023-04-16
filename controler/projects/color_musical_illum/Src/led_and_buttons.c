@@ -10,7 +10,7 @@
 
 u8 _is_power_press = 0;
 u8 _is_mode_press = 0;
-u16 _inject[4] = { 0 };
+extern u16 _inject[4];
 
 static void set_device_mode(void);
 

@@ -18,6 +18,9 @@ static void init_tim4(void);
 static void init_buttons(void);
 
 
+extern u8 volts[MEAS_NUM];
+
+
 void init_device(void)
 {
 	init_clk();
@@ -171,7 +174,7 @@ void init_usart3(void)
 	3. 16*0.4 = 6
 	4. Итого 0x116 / 0xD06
 	*****************************************/
-	USART3->BRR = 0xD06;
+	USART3->BRR = 0x116;
 
 	USART3->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
 	USART3->CR1 |= USART_CR1_RXNEIE;						//разрешить прерывание по приему байта данных
@@ -184,9 +187,10 @@ void init_adc(void)
 {
 	// PA1 ADC1 in1
 	// gpio init PA1
-	// use ADC1 1 injected channel PA1
+	// use ADC1 1 injected channel PA1 with DMA and ping_pong
 	// 4 regular channel PA2, PA3, PA4, PA5
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+
 	GPIOA->CRL &= ~(GPIO_CRL_CNF1 | GPIO_CRL_MODE1); // 00 - analog mode input mode PA1 reg
 	GPIOA->CRL &= ~(GPIO_CRL_CNF2 | GPIO_CRL_MODE2); // 00 - analog mode input mode PA2 inject
 	GPIOA->CRL &= ~(GPIO_CRL_CNF3 | GPIO_CRL_MODE3); // 00 - analog mode input mode PA3 inject
@@ -221,6 +225,27 @@ void init_adc(void)
 
 	ADC1->CR2 |= ADC_CR2_CONT; // Continuous conversion mode
 	ADC1->CR1 |= ADC_CR1_SCAN; // Scan mode enabled
+
+	// DMA settings DMA1 - channel 1
+	ADC1->CR2 |= ADC_CR2_DMA; // DMA mode enabled
+	RCC->AHBENR |= RCC_AHBENR_DMA1EN; // clock DMA1
+
+	DMA1_Channel1->CPAR = (u32) (&ADC1->DR); // set peripheral address
+	DMA1_Channel1->CMAR = (u32) (volts); // set memory address
+
+	DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0; // Peripheral size 16-bits
+	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_0; // Memory size 16-bits
+
+	DMA1_Channel1->CCR |= DMA_CCR_MINC; // Memory increment mode enabled
+	DMA1_Channel1->CCR |= DMA_CCR_CIRC; // Circular mode enabled
+	DMA1_Channel1->CCR &= ~(DMA_CCR_DIR); // Read from peripheral
+	DMA1_Channel1->CNDTR = MEAS_NUM; // number of data for transmition
+	// Enable DMA interrupts
+	DMA1_Channel1->CCR |= DMA_CCR_HTIE; // Half transfer interrupt enable
+	DMA1_Channel1->CCR |= DMA_CCR_TCIE; // Transfer complete interrupt enable
+
+	NVIC_EnableIRQ(DMA1_Channel1_IRQn); // Enable DMA interrupts
+	DMA1_Channel1->CCR |= DMA_CCR_EN; // turn on DMA
 
 	ADC1->CR2 |= ADC_CR2_ADON; // turn on adc
 

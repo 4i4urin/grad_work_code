@@ -21,12 +21,12 @@ t_complex* make_fft(const u8* pinput_arr, t_complex* fft_res)
 }
 
 
-// req MEAS_NUM * 4 byte memory
+// req FFT_DATA_NUM * 4 byte memory
 u16* make_fft_abs(u16* abs_fft, const u8* pinput_arr)
 {
-	t_complex fft_res[MEAS_NUM] = { 0 };
+	t_complex fft_res[FFT_DATA_NUM] = { 0 };
 	fft(pinput_arr, fft_res);
-	for (u16 i = 0; i < MEAS_NUM / 2; i++)
+	for (u16 i = 0; i < FFT_DATA_NUM << 1; i++)
 		abs_fft[i] = (u16) isqrt_newton( fft_res[i].re * fft_res[i].re
 	    						       + fft_res[i].im * fft_res[i].im);
 	return abs_fft;
@@ -75,7 +75,7 @@ void fft(const u8* pin_vect, t_complex* res)
 
 	register u16 indx_1 = 0, indx_2 = 0;
 	// circle for step = 0 move values from pin_vect to res
-	for (u16 group = 0; group < MEAS_NUM >> 1 ; group++ ) // inf loop
+	for (u16 group = 0; group < FFT_DATA_NUM >> 1 ; group++ ) // inf loop
 	{
 		indx_1 = (group * 2);
         indx_2 = indx_1 + 1;
@@ -88,11 +88,11 @@ void fft(const u8* pin_vect, t_complex* res)
         res[indx_2] = cplx_v2;
 	}
 
-    for (u8 step = 1; step < MEAS_POW2; step++)
+    for (u8 step = 1; step < FFT_DATA_POW2; step++)
     {
         base  = 1 << step;
         base_widlth = 1 << ( step + 1 );
-        for (u16 group = 0; group < (MEAS_NUM >> (1 + step) ); group++ ) // inf loop
+        for (u16 group = 0; group < (FFT_DATA_NUM >> (1 + step) ); group++ ) // inf loop
         {
             for (u16 group_size = 0; group_size < base; group_size++)
             {
@@ -135,16 +135,16 @@ u16 reverse(u16 byte)
 // can be speed up
 const t_complex_s8* fft_table(t_complex_s8* return_val, const u16 base, const u16 group_size)
 {
-	const u16 index_fft_arr = group_size * (MEAS_NUM / base);
-	if (index_fft_arr < (MEAS_NUM >> 2))
+	const u16 index_fft_arr = group_size * (FFT_DATA_NUM / base);
+	if (index_fft_arr < (FFT_DATA_NUM >> 2))
 	{
 		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr];
 		return_val->re = from_table->re;
 		return_val->im = from_table->im;
 	}
-	else if (index_fft_arr >= (MEAS_NUM >> 2))
+	else if (index_fft_arr >= (FFT_DATA_NUM >> 2))
 	{
-		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr - (MEAS_NUM >> 2)];
+		const t_complex_s8* from_table = &table_fft_arr[index_fft_arr - (FFT_DATA_NUM >> 2)];
 		return_val->re = from_table->im;
 		return_val->im = -from_table->re;
 	}

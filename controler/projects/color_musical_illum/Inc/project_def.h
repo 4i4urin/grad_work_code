@@ -32,7 +32,8 @@
 #define MCU_FREQ		64000000 // 64 MHz
 
 
-#define MEAS_POW2    11
+
+#define MEAS_POW2    12
 #define MEAS_NUM 	 (1 << MEAS_POW2) // Number of ADC measurements
 
 #define SAMPL_FRQ 	 30
