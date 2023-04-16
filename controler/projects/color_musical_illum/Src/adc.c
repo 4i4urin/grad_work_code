@@ -27,10 +27,11 @@ void start_tim4_khz(const u16 kHz)
 // Считываем значения с АЦП
 u16 read_adc(void)
 {
-	ADC1->CR2 |= ADC_CR2_SWSTART;
-	while ( !(ADC1->SR & ADC_SR_EOC) ) { } // wait finish of conversion
+	//ADC1->CR2 |= ADC_CR2_SWSTART;
+	//while ( !(ADC1->SR & ADC_SR_EOC) ) { } // wait finish of conversion
 	return ADC1->DR;
 }
+
 
 u8* make_meas_adc(u8* parr, const u16 size, const u16 kHz)
 {

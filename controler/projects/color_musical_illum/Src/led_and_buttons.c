@@ -10,15 +10,26 @@
 
 u8 _is_power_press = 0;
 u8 _is_mode_press = 0;
+u16 _inject[4] = { 0 };
 
 static void set_device_mode(void);
 
 // OFF/ON ctrl led
+// read inject channels every 5 ms
 void TIM3_IRQHandler(void)
 {
 	if (TIM3->SR & TIM_SR_UIF)
 	{
-		SWAP_CTRL_LED();
+		static u32 click = 0;
+		click += 1;
+		if (click % 100 == 0) // every 0,5 sec
+			SWAP_CTRL_LED();
+
+		_inject[0] = ADC1->JDR1;
+		_inject[1] = ADC1->JDR2;
+		_inject[2] = ADC1->JDR3;
+		_inject[3] = ADC1->JDR4;
+
 		TIM3->SR &= ~(TIM_SR_UIF);
 	}
 }

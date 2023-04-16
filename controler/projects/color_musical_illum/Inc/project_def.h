@@ -52,5 +52,8 @@
 #define OFF_LED_POWER() GPIOB->BSRR = GPIO_BSRR_BR7
 
 
+#define MCSEC_IN_SEC 	1000000
+
+
 
 #endif /* PROJECT_DEF_H_ */

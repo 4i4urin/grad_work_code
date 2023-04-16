@@ -15,7 +15,7 @@ int main(void)
 {
 	init_device();
 	delay(1000000);
-	send_res_dpot(20);
+	send_res_dpot(0);
 	char tx_buf[MAX_TX_STR] = { 0 };
 	u8* pvolts = volts;
 	u16* pfft_res = fft_abs;
@@ -30,6 +30,7 @@ int main(void)
 
 		case E_DEV_CALIB:
 			// change number of leds
+			while (get_dev_state() != E_DEV_SLEEP) { }
 			set_dev_state(E_DEV_WORK);
 			break;
 
@@ -41,7 +42,7 @@ int main(void)
 		default:
 			return 1;
 		}
-		for (u8 dpot_res = 10; dpot_res < 100; dpot_res += 10)
+		for (u8 dpot_res = 1; dpot_res < 11; dpot_res++)
 		{
 			send_res_dpot(dpot_res);
 			//wait_com_uart();

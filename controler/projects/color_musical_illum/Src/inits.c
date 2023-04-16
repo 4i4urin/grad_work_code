@@ -118,7 +118,7 @@ void init_spi(void)
 
 	SPI1->CR1 |= SPI_CR1_LSBFIRST; // LSB
 	SPI1->CR1 &= ~(SPI_CR1_BR);
-	SPI1->CR1 |= SPI_CR1_BR_1; // 010 = f MCU / 8 = 8Mhz
+	SPI1->CR1 |= SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_BR_2; // 010 = f MCU / 8 = 8Mhz
 	SPI1->CR1 |= SPI_CR1_MSTR; // master mode
 
 	SPI1->CR1 |= SPI_CR1_CPHA;
@@ -184,21 +184,43 @@ void init_adc(void)
 {
 	// PA1 ADC1 in1
 	// gpio init PA1
+	// use ADC1 1 injected channel PA1
+	// 4 regular channel PA2, PA3, PA4, PA5
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-	GPIOA->CRL &= ~(GPIO_CRL_CNF1); // 00 - analog mode
-	GPIOA->CRL &= ~(GPIO_CRL_MODE1); // 00 - input mode
+	GPIOA->CRL &= ~(GPIO_CRL_CNF1 | GPIO_CRL_MODE1); // 00 - analog mode input mode PA1 reg
+	GPIOA->CRL &= ~(GPIO_CRL_CNF2 | GPIO_CRL_MODE2); // 00 - analog mode input mode PA2 inject
+	GPIOA->CRL &= ~(GPIO_CRL_CNF3 | GPIO_CRL_MODE3); // 00 - analog mode input mode PA3 inject
+	GPIOA->CRL &= ~(GPIO_CRL_CNF4 | GPIO_CRL_MODE4); // 00 - analog mode input mode PA4 inject
+	GPIOA->CRL &= ~(GPIO_CRL_CNF5 | GPIO_CRL_MODE5); // 00 - analog mode input mode PA5 inject
 
 	// ADC in1
 	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
 
 	ADC1->SMPR2 &= ~(ADC_SMPR2_SMP1); // 000
-	ADC1->SMPR2 |= ADC_SMPR2_SMP1_2 | ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_0; // 111 - sample time = 239,5 cycles
+	ADC1->SMPR2 |=  ADC_SMPR2_SMP1_1; // 010 - sample time = 13.5 cycles for PA1
 
+	ADC1->SMPR2 |=  ADC_SMPR2_SMP2_1; // 010 - sample time = 13.5 cycles for PA2
+	ADC1->SMPR2 |=  ADC_SMPR2_SMP3_1; // 010 - sample time = 13.5 cycles for PA3
+	ADC1->SMPR2 |=  ADC_SMPR2_SMP4_1; // 010 - sample time = 13.5 cycles for PA4
+	ADC1->SMPR2 |=  ADC_SMPR2_SMP5_1; // 010 - sample time = 13.5 cycles for PA5
+
+	// injected channels
+	ADC1->JSQR |= ADC_JSQR_JL_0 | ADC_JSQR_JL_1; // 4 regular channels
+	ADC1->JSQR |= ADC_JSQR_JSQ1_1; 					 // #1 PA2 001
+	ADC1->JSQR |= ADC_JSQR_JSQ2_1 | ADC_JSQR_JSQ2_0; // #2 PA3 011
+	ADC1->JSQR |= ADC_JSQR_JSQ3_2; 					 // #3 PA4 100
+	ADC1->JSQR |= ADC_JSQR_JSQ4_2 | ADC_JSQR_JSQ4_0; // #4 PA5 101
+													 // sequence
+	// regular channels
 	ADC1->SQR1  &= ~(ADC_SQR1_L); 	// 1 conversion  // if was 0010 would be 3 conversion (require 3 channels)
-	ADC1->SQR3  |= ADC_SQR3_SQ1_0; // 1 channel is first conversion in regular
+	ADC1->SQR3  |= ADC_SQR3_SQ1_0; // PA1 channel is first conversion in regular
 
 	ADC1->CR2 |= ADC_CR2_CONT; // continuous mode //as fast as can
 	ADC1->CR1 &= ~(ADC_CR1_SCAN); // no scan mode
+	ADC1->CR1 |= ADC_CR1_JAUTO; // Automatic injected group conversion enabled
+
+	ADC1->CR2 |= ADC_CR2_CONT; // Continuous conversion mode
+	ADC1->CR1 |= ADC_CR1_SCAN; // Scan mode enabled
 
 	ADC1->CR2 |= ADC_CR2_ADON; // turn on adc
 
@@ -209,7 +231,8 @@ void init_adc(void)
 
 	ADC1->CR2 |= ADC_CR2_EXTTRIG; // enable conversion on external event
 	ADC1->CR2 |= ADC_CR2_EXTSEL;  // turn on by SWSTART
-//	ADC1->CR2 |= ADC_CR2_SWSTART; // turn on
+	ADC1->CR2 |= ADC_CR2_SWSTART; // turn on regular channel
+	//ADC1->CR2 |= ADC_CR2_JSWSTART; // turn on inject channels
 }
 
 
