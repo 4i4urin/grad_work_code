@@ -10,6 +10,9 @@
 
 void send_res_dpot(u8 resistance, u8 add_ohm_byte);
 
+u8 get_depot_res(void);
+
+
 #define MAX_DPOT_RES  104 				// 104 kOhm
 #define MID_DPOT_RES  (MAX_DPOT_RES >> 1) // 52  kOhm
 

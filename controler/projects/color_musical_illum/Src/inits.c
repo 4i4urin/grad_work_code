@@ -227,25 +227,25 @@ void init_adc(void)
 	ADC1->CR1 |= ADC_CR1_SCAN; // Scan mode enabled
 
 	// DMA settings DMA1 - channel 1
-	ADC1->CR2 |= ADC_CR2_DMA; // DMA mode enabled
-	RCC->AHBENR |= RCC_AHBENR_DMA1EN; // clock DMA1
-
-	DMA1_Channel1->CPAR = (u32) (&ADC1->DR); // set peripheral address
-	DMA1_Channel1->CMAR = (u32) (volts); // set memory address
-
-	DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0; // Peripheral size 16-bits
-	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_0; // Memory size 16-bits
-
-	DMA1_Channel1->CCR |= DMA_CCR_MINC; // Memory increment mode enabled
-	DMA1_Channel1->CCR |= DMA_CCR_CIRC; // Circular mode enabled
-	DMA1_Channel1->CCR &= ~(DMA_CCR_DIR); // Read from peripheral
-	DMA1_Channel1->CNDTR = MEAS_NUM; // number of data for transmition
-	// Enable DMA interrupts
-	DMA1_Channel1->CCR |= DMA_CCR_HTIE; // Half transfer interrupt enable
-	DMA1_Channel1->CCR |= DMA_CCR_TCIE; // Transfer complete interrupt enable
-
-	NVIC_EnableIRQ(DMA1_Channel1_IRQn); // Enable DMA interrupts
-	DMA1_Channel1->CCR |= DMA_CCR_EN; // turn on DMA
+//	ADC1->CR2 |= ADC_CR2_DMA; // DMA mode enabled
+//	RCC->AHBENR |= RCC_AHBENR_DMA1EN; // clock DMA1
+//
+//	DMA1_Channel1->CPAR = (u32) (&ADC1->DR); // set peripheral address
+//	DMA1_Channel1->CMAR = (u32) (volts); // set memory address
+//
+//	DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0; // Peripheral size 16-bits
+//	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_0; // Memory size 16-bits
+//
+//	DMA1_Channel1->CCR |= DMA_CCR_MINC; // Memory increment mode enabled
+//	DMA1_Channel1->CCR |= DMA_CCR_CIRC; // Circular mode enabled
+//	DMA1_Channel1->CCR &= ~(DMA_CCR_DIR); // Read from peripheral
+//	DMA1_Channel1->CNDTR = MEAS_NUM; // number of data for transmition
+//	// Enable DMA interrupts
+//	DMA1_Channel1->CCR |= DMA_CCR_HTIE; // Half transfer interrupt enable
+//	DMA1_Channel1->CCR |= DMA_CCR_TCIE; // Transfer complete interrupt enable
+//
+//	NVIC_EnableIRQ(DMA1_Channel1_IRQn); // Enable DMA interrupts
+//	DMA1_Channel1->CCR |= DMA_CCR_EN; // turn on DMA
 
 	ADC1->CR2 |= ADC_CR2_ADON; // turn on adc
 

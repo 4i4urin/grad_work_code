@@ -17,6 +17,11 @@
 #define STOP_TIM4() 	TIM4->CR1 &= ~(TIM_CR1_CEN)
 
 
+#define CALIB_MEAS_NUM 		20
+#define LOWER_AMPL_LIMIT 	45
+#define HIGHER_AMPL_LIMIT 	210
+
+
 u8* make_meas_adc(u8* parr, const u16 size, const u16 kHz);
 
 

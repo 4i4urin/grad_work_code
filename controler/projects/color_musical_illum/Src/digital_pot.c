@@ -11,6 +11,8 @@
 static u8 reverse_8(u8 byte);
 static void spi1_write(u16* pdata);
 
+u8 _dpot_resist = 0;
+
 
 u8 reverse_8(u8 byte)
 {
@@ -27,6 +29,7 @@ void send_res_dpot(u8 resistance_kohm, u8 add_ohm_byte)
 	if (add_ohm_byte > ADD_800_OHM)
 		add_ohm_byte = ADD_800_OHM;
 
+	_dpot_resist = resistance_kohm;
 	t_dpot_send msg;
 	msg.hdr.comm	  = E_DPOT_COM_WRITE;
 	msg.hdr.ch_select = (resistance_kohm <= MID_DPOT_RES)
@@ -40,6 +43,12 @@ void send_res_dpot(u8 resistance_kohm, u8 add_ohm_byte)
 
 	msg.data = reverse_8(res_byte);
 	spi1_write((u16*)&msg);
+}
+
+
+u8 get_depot_res(void)
+{
+	return _dpot_resist;
 }
 
 

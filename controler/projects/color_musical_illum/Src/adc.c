@@ -6,6 +6,10 @@
  */
 #include "color_musical_illum.h"
 #include "adc.h"
+#include "digital_pot.h"
+
+// debug
+#include "usart.h"
 
 static void start_tim4_khz(const u16 kHz);
 static u16 read_adc(void);
@@ -54,11 +58,39 @@ u16 read_adc(void)
 u8* make_meas_adc(u8* parr, const u16 size, const u16 kHz)
 {
 	start_tim4_khz(kHz);
+	u8 signal_ampl = 0;
+	u8 volt_max = 0;
+	u8 volt_min = 0xFF;
+	u8 dpot_res = get_depot_res();
+
+	// debug
+	char tx_buf[32] = { 0 };
 	for(u16 i = 0; i < size; i++)
 	{
+		if (i % CALIB_MEAS_NUM == 0)
+		{
+			signal_ampl = volt_max - volt_min;
+			if (signal_ampl < LOWER_AMPL_LIMIT)
+			{	// increase gain
+				dpot_res = (dpot_res + 1 > MAX_DPOT_RES) ? MAX_DPOT_RES : dpot_res + 1;
+				send_res_dpot(dpot_res, ADD_200_OHM);// add dpot_1
+//				sprintf(tx_buf, "dpot = %d\r\n", dpot_res);
+//				tx_str(tx_buf);
+			}
+			else if (signal_ampl > HIGHER_AMPL_LIMIT)
+			{
+				// decrease gain
+				dpot_res = (dpot_res - 1 == 0) ? 0 : dpot_res - 1;
+				send_res_dpot(dpot_res, ADD_200_OHM);// decrease dpot 1
+//				sprintf(tx_buf, "dpot = %d\r\n", dpot_res);
+//				tx_str(tx_buf);
+			}
+		}
 		while ( !tim4_enable) {};
 		parr[i] = read_adc() >> 4;
 		tim4_enable = 0;
+		volt_max = (parr[i] > volt_max) ? parr[i] : volt_max;
+		volt_min = (parr[i] < volt_min) ? parr[i] : volt_min;
 	}
 	STOP_TIM4();
 	return parr;
