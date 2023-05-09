@@ -20,6 +20,8 @@ u8 com_receive;
 //u8 rx_buf[MAX_STR_SIZE];
 u8 tim4_enable;
 
+void show_volts(u8* parr, u16 length, char* str);
+void show_fft(u16* pcmplx_arr, u16 length, char* str);
 
 
 //  Передача строки по USART2 без DMA
@@ -29,8 +31,8 @@ void tx_str(const char *str)
 
 	for (i = 0; i < strlen((char*)str); i++)
 	{
-		USART2->DR = str[i];								//передаём байт данных
-		while ((USART2->SR & USART_SR_TC) == 0) {};			//ждём окончания передачи
+		USART3->DR = str[i];								//передаём байт данных
+		while ((USART3->SR & USART_SR_TC) == 0) {};			//ждём окончания передачи
 	}
 }
 
@@ -38,8 +40,8 @@ void tx_str(const char *str)
 // ОТправка данных в юарт
 void tx_char(const char ch)
 {
-	USART2->DR = ch;
-	while ((USART2->SR & USART_SR_TC) == 0) {};
+	USART3->DR = ch;
+	while ((USART3->SR & USART_SR_TC) == 0) {};
 }
 
 
@@ -55,15 +57,15 @@ u16 read_adc(void)
 
 
 // обработчик прерывания по юарт принимает пробелы и тд
-void USART2_IRQHandler(void)
+void USART3_IRQHandler(void)
 {
-	if ((USART2->SR & USART_SR_RXNE)!=0)		//Прерывание по приёму данных?
+	if ((USART3->SR & USART_SR_RXNE)!=0)		//Прерывание по приёму данных?
 	{
 		//u8 pos = strlen((char*)rx_buf);			//Вычисляем позицию свободной ячейки
 		u8 ch = 0;
 		//rx_buf[pos] = USART2->DR; 			//Считываем содержимое регистра данных
 		//tx_char(rx_buf[pos]);
-		ch = USART2->DR;
+		ch = USART3->DR;
 		tx_char(ch);
 
 		if (isspace(ch))							//Если это символ конца строки
@@ -150,18 +152,25 @@ int main(void)
     	START_TIM3();
     	pvolts = make_meas_adc(pvolts, MEAS_NUM, 30);
     	stopwatch = take_tim3_val();
-    	sprintf(tx_buf, "ADC meas time = %d.%d ms\n\n\r", stopwatch / 10,
-    												 	  stopwatch % 10);
-    	tx_str(tx_buf);
+
+    	show_volts(pvolts, MEAS_NUM, tx_buf);
+    	wait_com_uart();
+//    	sprintf(tx_buf, "ADC meas time = %d.%d ms\n\n\r", stopwatch / 10,
+//    												 	  stopwatch % 10);
+//    	tx_str(tx_buf);
 
     	START_TIM3();
     	pfft_abs = make_fft_abs(pfft_abs, pvolts);
     	stopwatch = take_tim3_val();
-    	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
-    													  stopwatch % 10);
-    	tx_str(tx_buf);
 
+    	show_fft(pfft_abs, MEAS_NUM / 2, tx_buf);
     	wait_com_uart();
+//    	sprintf(tx_buf, "FFT calc time = %d.%d ms\n\n\r", stopwatch / 10,
+//    													  stopwatch % 10);
+//    	tx_str(tx_buf);
+
+    	/*
+
     	tx_str("\rADC meas:\r\n");
     	for (u16 i = 0; i < MEAS_NUM; i++)
     	{
@@ -175,7 +184,28 @@ int main(void)
     		sprintf(tx_buf, "%d\r\n", pfft_abs[i]);
     		tx_str(tx_buf);
     	}
+    	*/
     }
+}
+
+
+void show_volts(u8* parr, u16 length, char* str)
+{
+	for (u16 i = 0; i < length; i++)
+	{
+		sprintf(str, "%d\r\n", parr[i]);
+		tx_str(str);
+	}
+}
+
+
+void show_fft(u16* pcmplx_arr, u16 length, char* str)
+{
+	for (u16 i = 0; i < length; i++)
+	{
+		sprintf(str, "%d\r\n", pcmplx_arr[i]);
+		tx_str(str);
+	}
 }
 
 

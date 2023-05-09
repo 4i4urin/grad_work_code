@@ -22,8 +22,8 @@ void TIM3_IRQHandler(void)
 	{
 		static u32 click = 0;
 		click += 1;
-		if (click % 100 == 0) // every 0,5 sec
-			SWAP_CTRL_LED();
+//		if (click % 100 == 0) // every 0,5 sec
+//			SWAP_CTRL_LED();
 
 		_inject[0] = ADC1->JDR1;
 		_inject[1] = ADC1->JDR2;

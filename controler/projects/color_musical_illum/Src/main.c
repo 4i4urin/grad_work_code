@@ -8,7 +8,17 @@
 
 u8  _volts[MEAS_FULL_NUM] = { 0 };
 u8* _pvolts = _volts;
-//u16 fft_abs[FFT_DATA_NUM << 1] = { 0 };
+
+t_fft _fft = { 0 };
+u16* _pfft_abs = _fft.abs_res;
+t_complex* _pfft_res = _fft.cmpx_val;
+
+//u16 _fft_abs[FFT_DATA_NUM] = { 0 };
+//u16* _pfft_abs = _fft_abs;
+//
+//t_complex _fft_res[FFT_DATA_NUM] = { 0 };
+//t_complex* _pfft_res = _fft_res;
+
 e_device_state _dev_state = E_DEV_WORK;
 u16 _inject[4] = { 0 };
 u8 meas_max_ampl(u8* pvolts, u16 number);
@@ -26,6 +36,7 @@ int main(void)
 	char tx_buf[MAX_TX_STR] = { 0 };
 	set_dev_state(E_DEV_WORK);
 	start_adc_meas();
+
 
 	while (1)
 	{
@@ -55,12 +66,20 @@ int main(void)
 			sprintf(tx_buf, "1 dpot = %d\tampl = %d\r\n",
 					get_depot_res(), meas_max_ampl(_pvolts, MEAS_HALF_NUM));
 			tx_str(tx_buf);
+
+			_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts);
+			OFF_CTRL_LED();
 			_meas_half_ready = 0;
+
 		} else if (_meas_full_ready)
 		{
 			sprintf(tx_buf, "2 dpot = %d\tampl = %d\r\n",
 					get_depot_res(), meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM));
 			tx_str(tx_buf);
+
+			_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts + MEAS_HALF_NUM);
+
+			OFF_CTRL_LED();
 			_meas_full_ready = 0;
 		}
 	}

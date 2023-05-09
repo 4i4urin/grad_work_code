@@ -37,7 +37,11 @@
 #define MEAS_FULL_NUM (1 << MEAS_POW2) // Number of ADC measurements
 #define MEAS_HALF_NUM (MEAS_FULL_NUM >> 1) // for ping-pong
 
-#define SAMPL_FRQ 	 30000 //Hz
+// for ping-pong buffer
+#define FFT_DATA_POW2 (MEAS_POW2 - 1)
+#define FFT_DATA_NUM  (1 << FFT_DATA_POW2)
+
+#define SAMPL_FRQ 	 25000 //Hz
 
 
 #define MAX_TX_STR   128

@@ -70,5 +70,17 @@ typedef struct _t_complex_s8
     s8 im;
 } t_complex_s8;
 
+typedef t_complex t_complex_arr[FFT_DATA_NUM];
+typedef u16 	  t_fft_abs_res[FFT_DATA_NUM];
+
+typedef union _t_fft
+{
+	t_complex_arr cmpx_val;
+	t_fft_abs_res abs_res;
+} t_fft;
+
+//typedef t_complex	t_complex_arr[FFT_DATA_NUM << 1];
+
+
 
 #endif /* PROJECT_TYPES_H_ */

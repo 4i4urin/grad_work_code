@@ -9,10 +9,6 @@
 #define ADC_H_
 
 
-#define TIM4_FREQ 		1000000 // 1 MHz
-#define TIM4_PSC 		(MCU_FREQ / TIM4_FREQ)
-
-
 #define START_TIM4()	TIM4->CR1 |= TIM_CR1_CEN
 #define STOP_TIM4() 	TIM4->CR1 &= ~(TIM_CR1_CEN)
 

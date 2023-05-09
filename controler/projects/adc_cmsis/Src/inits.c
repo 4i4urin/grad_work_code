@@ -9,7 +9,7 @@
 
 static void init_adc(void);
 static void init_clk(void);
-static void init_usart2(void);
+static void init_usart3(void);
 static void init_tim4(void);
 static void init_spi(void);
 static void init_tim3(void);
@@ -19,7 +19,7 @@ void init_device(void)
 {
 	init_clk();
 	init_adc();
-	init_usart2();
+	init_usart3();
 	init_tim4();
 	init_spi();
 	init_tim3();
@@ -114,33 +114,34 @@ void init_tim4(void)
   * @param  None
   * @retval None
   */
-void init_usart2(void)
+void init_usart3(void)
 {
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;						//включить тактирование альтернативных ф-ций портов
-	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;					//включить тактирование UART2
+	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;					//включить тактирование UART2
 
-	GPIOA->CRL &= ~(GPIO_CRL_MODE2 | GPIO_CRL_CNF2);		//PA2 на выход
-	GPIOA->CRL |= (GPIO_CRL_MODE2_1 | GPIO_CRL_CNF2_1);
+	GPIOB->CRH &= ~(GPIO_CRH_MODE10 | GPIO_CRH_CNF10);		//PB10 на выход
+	GPIOB->CRH |= (GPIO_CRH_MODE10_1 | GPIO_CRH_CNF10_1);
 
-	GPIOA->CRL &= ~(GPIO_CRL_MODE3 | GPIO_CRL_CNF3);		//PA3 - вход
-	GPIOA->CRL |= GPIO_CRL_CNF3_0;
+	GPIOB->CRH &= ~(GPIO_CRH_MODE11 | GPIO_CRH_CNF11);		//PB11 - вход
+	GPIOB->CRH |= GPIO_CRH_CNF11_0;
 
 	/*****************************************
-	Скорость передачи данных - 115200
+	Скорость передачи данных - 115200 / 9600
 	Частота шины APB1 - 32МГц
 	1. USARTDIV = 32'000'000/(16*115200) = 17.4
-	2. 17 = 0x11
+	2. 17 = 0x11 / 0xD0
 	3. 16*0.4 = 6
-	4. Итого 0x116
+	4. Итого 0x116 / 0xD06
 	*****************************************/
-	USART2->BRR = 0x116;
+	USART3->BRR = 0x116;
 
-	USART2->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
-	USART2->CR1 |= USART_CR1_RXNEIE;						//разрешить прерывание по приему байта данных
+	USART3->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
+	USART3->CR1 |= USART_CR1_RXNEIE;						//разрешить прерывание по приему байта данных
 
-	NVIC_EnableIRQ(USART2_IRQn);
+	NVIC_EnableIRQ(USART3_IRQn);
 }
+
 
 
 void init_adc(void)

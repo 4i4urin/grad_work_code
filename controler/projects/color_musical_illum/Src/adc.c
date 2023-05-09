@@ -8,6 +8,8 @@
 #include "adc.h"
 #include "digital_pot.h"
 
+#include "usart.h"
+
 
 static void calib_gain(u8 signal_ampl);
 
@@ -37,11 +39,13 @@ void TIM4_IRQHandler(void)
 
 		if (_meas_half_ready && i < MEAS_HALF_NUM)
 		{
+			ON_CTRL_LED();
 			TIM4->SR &= ~(TIM_SR_UIF);
 			return;
 		}
 		if (_meas_full_ready && i >= MEAS_HALF_NUM)
 		{
+			ON_CTRL_LED();
 			TIM4->SR &= ~(TIM_SR_UIF);
 			return;
 		}

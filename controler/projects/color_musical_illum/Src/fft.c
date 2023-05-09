@@ -22,11 +22,10 @@ t_complex* make_fft(const u8* pinput_arr, t_complex* fft_res)
 
 
 // req FFT_DATA_NUM * 4 byte memory
-u16* make_fft_abs(u16* abs_fft, const u8* pinput_arr)
+u16* make_fft_abs(t_complex* fft_res, u16* abs_fft, const u8* pinput_arr)
 {
-	t_complex fft_res[FFT_DATA_NUM] = { 0 };
 	fft(pinput_arr, fft_res);
-	for (u16 i = 0; i < FFT_DATA_NUM << 1; i++)
+	for (u16 i = 0; i < FFT_DATA_NUM >> 1; i++)
 		abs_fft[i] = (u16) isqrt_newton( fft_res[i].re * fft_res[i].re
 	    						       + fft_res[i].im * fft_res[i].im);
 	return abs_fft;
@@ -77,7 +76,7 @@ void fft(const u8* pin_vect, t_complex* res)
 	// circle for step = 0 move values from pin_vect to res
 	for (u16 group = 0; group < FFT_DATA_NUM >> 1 ; group++ ) // inf loop
 	{
-		indx_1 = (group * 2);
+		indx_1 = group << 1;
         indx_2 = indx_1 + 1;
         // for this part pcplx_w always the same = {64 , 0} or {1, 0} cos(0) sin(0)
         svolt_1 = pin_vect[ reverse(indx_1) ];
