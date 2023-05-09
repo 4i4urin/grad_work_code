@@ -5,26 +5,27 @@
 #include "usart.h"
 #include "fft.h"
 
-#define DEBUG_MEAS 2048
-u8 volts[DEBUG_MEAS] = { 0 };
+
+u8  _volts[MEAS_FULL_NUM] = { 0 };
+u8* _pvolts = _volts;
 //u16 fft_abs[FFT_DATA_NUM << 1] = { 0 };
 e_device_state _dev_state = E_DEV_WORK;
 u16 _inject[4] = { 0 };
-//u8 _is_half_volts = 0;
 u8 meas_max_ampl(u8* pvolts, u16 number);
+
+
+u8 _meas_full_ready = 0;
+u8 _meas_half_ready = 0;
 
 
 int main(void)
 {
 	init_device();
 	delay(1000000);
-	send_res_dpot(7, ADD_200_OHM);
+	send_res_dpot(50, ADD_200_OHM);
 	char tx_buf[MAX_TX_STR] = { 0 };
 	set_dev_state(E_DEV_WORK);
-	//u8* pvolts_first_half = volts;
-	//u8* pvolts_second_half = (&volts[0]) + (MEAS_NUM << 1);
-	u8* pvolts = volts;
-	//u16* pfft_res = fft_abs;
+	start_adc_meas();
 
 	while (1)
 	{
@@ -49,30 +50,19 @@ int main(void)
 			break;
 			//return 1;
 		}
-
-		pvolts = make_meas_adc(pvolts, DEBUG_MEAS, SAMPL_FRQ);
-		sprintf(tx_buf, "dpot = %d\tampl = %d\r\n",
-				get_depot_res(), meas_max_ampl(pvolts, DEBUG_MEAS));
-		tx_str(tx_buf);
-
-//		for (u8 dpot_res = 0; dpot_res < 11; dpot_res++)
-//		{
-//			send_res_dpot(dpot_res, ADD_400_OHM);
-//			//wait_com_uart();
-//			pvolts = make_meas_adc(pvolts, 64, SAMPL_FRQ);
-////			pfft_res = (is_half_volts) ? make_fft_abs(pfft_res, pvolts)
-////									   : make_fft_abs(pfft_res, pvolts + (MEAS_NUM << 1));
-//			//pfft_res = make_fft_abs(pfft_res, pvolts_first_half);
-//			sprintf(tx_buf, "%d, %d, %d, %d\r\n", _inject[0], _inject[1], _inject[2], _inject[3]);
-//			tx_str(tx_buf);
-//			//sprintf(tx_buf, "dpot_res = %d\r\n", dpot_res);
-//			//tx_str(tx_buf);
-////			for (u16 i = 0; i < MEAS_NUM / 2; i++)
-////			{
-////				sprintf(tx_buf, "%d\r\n", pvolts[i]);
-////				tx_str(tx_buf);
-////			}
-//		}
+		if (_meas_half_ready)
+		{
+			sprintf(tx_buf, "1 dpot = %d\tampl = %d\r\n",
+					get_depot_res(), meas_max_ampl(_pvolts, MEAS_HALF_NUM));
+			tx_str(tx_buf);
+			_meas_half_ready = 0;
+		} else if (_meas_full_ready)
+		{
+			sprintf(tx_buf, "2 dpot = %d\tampl = %d\r\n",
+					get_depot_res(), meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM));
+			tx_str(tx_buf);
+			_meas_full_ready = 0;
+		}
 	}
 }
 

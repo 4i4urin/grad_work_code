@@ -14,7 +14,7 @@
  */
 
 
-#if (MEAS_NUM == 64)
+#if (FFT_DATA_NUM == 64)
 	static const t_complex_s8 table_fft_arr[16] = {
 			{  64,    0}, {  63,   -5}, {  62,  -12},
 			{  60,  -18}, {  58,  -24}, {  56,  -30},
@@ -24,7 +24,7 @@
 			{   5,  -63}
 	};
 
-#elif (MEAS_NUM == 1024)
+#elif (FFT_DATA_NUM == 1024)
 	static const t_complex_s8 table_fft_arr[256] = {
 		{  64,    0}, {  63,    0}, {  63,    0},
 	    {  63,    0}, {  63,   -1}, {  63,   -1},
@@ -114,7 +114,7 @@
 	    {   0,  -63},
 	};
 
-#elif (MEAS_NUM == 2048)
+#elif (FFT_DATA_NUM == 2048)
 	static const t_complex_s8 table_fft_arr[512] = {
 		{  64,    0}, {  63,    0}, {  63,    0},
 	    {  63,    0}, {  63,    0}, {  63,    0},
@@ -291,7 +291,7 @@
 
 
 
-#elif (MEAS_NUM == 4096)
+#elif (FFT_DATA_NUM == 4096)
 	static const t_complex_s8 table_fft_arr[1024] = {
 		{  64,    0}, {  63,    0}, {  63,    0},
 	    {  63,    0}, {  63,    0}, {  63,    0},

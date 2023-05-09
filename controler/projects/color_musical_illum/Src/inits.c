@@ -18,7 +18,7 @@ static void init_tim4(void);
 static void init_buttons(void);
 
 
-extern u8 volts[MEAS_NUM];
+//extern u8 volts[MEAS_NUM];
 
 
 void init_device(void)
@@ -62,16 +62,19 @@ void init_buttons(void)
 
 
 // timer for reading adc
+// read adc1 with 30kHz freq
 void init_tim4(void)
 {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
 
 	TIM4->PSC = TIM4_PSC - 1; // timer period 1 MHz
 	TIM4->DIER |= TIM_DIER_UIE; // enable interrupts by update
+	TIM4->ARR = TIM4_FREQ / SAMPL_FRQ; // set interrupt freq
 	TIM4->CNT = 0;
-	TIM4->ARR = 0;
 
-	NVIC_EnableIRQ(TIM4_IRQn);				//Рарзрешить прерывание от TIM2
+	TIM4->DIER |= TIM_DIER_UIE; // enable interrupts by update
+
+	NVIC_EnableIRQ(TIM4_IRQn);				//Рарзрешить прерывание от TIM4
 	NVIC_SetPriority(TIM4_IRQn, 1);			//Выставляем приоритет
 }
 

@@ -23,6 +23,8 @@
 
 
 u8* make_meas_adc(u8* parr, const u16 size, const u16 kHz);
+void stop_adc_meas(void);
+void start_adc_meas(void);
 
 
 #endif /* ADC_H_ */
