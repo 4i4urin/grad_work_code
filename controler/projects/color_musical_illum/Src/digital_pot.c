@@ -4,7 +4,7 @@
  *  Created on: Mar 20, 2023
  *      Author: shishel
  */
-#include "color_musical_illum.h"
+#include "main.h"
 #include "digital_pot.h"
 
 

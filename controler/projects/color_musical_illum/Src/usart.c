@@ -4,7 +4,7 @@
  *  Created on: Apr 05, 2023
  *      Author: shishel
  */
-#include "color_musical_illum.h"
+#include "main.h"
 #include "usart.h"
 
 static u8 com_receive = 0;

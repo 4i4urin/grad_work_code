@@ -5,6 +5,9 @@
  *      Author: shishel
  */
 #include "inits.h"
+#include "digital_pot.h"
+#include "adc.h"
+#include "ws2815.h"
 
 
 static void init_adc(void);
@@ -16,9 +19,8 @@ static void init_led_pb1(void);
 static void init_ctrl_led(void);
 static void init_tim4(void);
 static void init_buttons(void);
+static void init_ws2815(void);
 
-
-//extern u8 volts[MEAS_NUM];
 
 
 void init_device(void)
@@ -32,6 +34,46 @@ void init_device(void)
 	init_led_pb1();
 	init_ctrl_led();
 	init_buttons();
+	send_res_dpot(50, ADD_200_OHM);
+	init_ws2815();
+	ON_LED_POWER();
+	start_adc_meas();
+}
+
+
+void init_ws2815(void) {
+	//flag_rdy = 0;
+
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; //Включаем тактирование порта GPIOA
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN; //таймера TIM2
+	RCC->AHBENR |= RCC_AHBENR_DMA1EN;   //и DMA1
+
+	//PA0 freq=50Mhz, AF output Push-pull
+	GPIOA->CRL &= ~(GPIO_CRL_CNF0);
+	GPIOA->CRL |= GPIO_CRL_CNF0_1 | GPIO_CRL_MODE0;
+
+	TIM2->CCER |= TIM_CCER_CC1E;    //output mode chanel 1 PA0
+
+	TIM2->CCMR1 &= ~(TIM_CCMR1_OC1M_2); // reset capture compare register
+	TIM2->CCMR1 |= TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE; // PWM mode 1 and enable preload mode
+
+	TIM2->CR1 |= TIM_CR1_ARPE;    //Регистры таймера с буферизацией
+	TIM2->DIER |= TIM_DIER_CC1DE; //Разрешить запрос DMA
+	TIM2->DIER |= TIM_DIER_UIE; //прерывание по обновлению
+
+	//Настраиваем канал DMA
+	DMA1_Channel5->CPAR = (u32) (&TIM2->CCR1); //Куда пишем
+	DMA1_Channel5->CMAR = (u32) (get_buf_led_pointer()); //откуда берем
+
+	DMA1_Channel5->CCR |= DMA_CCR_PSIZE_0; //регистр переферии 16 бит
+	DMA1_Channel5->CCR |= DMA_CCR_MINC; //режим инкремента указателя памяти
+	DMA1_Channel5->CCR |= DMA_CCR_DIR; //напревление передачи из памяти в переферию
+
+	NVIC_EnableIRQ(TIM2_IRQn); //прерывание от таймера
+	NVIC_EnableIRQ(DMA1_Channel5_IRQn); //прерывание от DMA
+
+	ws2812b_buff_clear();
+	TIM2->CR1 |= TIM_CR1_CEN;
 }
 
 

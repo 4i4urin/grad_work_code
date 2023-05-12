@@ -4,7 +4,7 @@
  *  Created on: 28 мар. 2023 г.
  *      Author: Shishel
  */
-#include "color_musical_illum.h"
+#include "main.h"
 #include "adc.h"
 #include "digital_pot.h"
 

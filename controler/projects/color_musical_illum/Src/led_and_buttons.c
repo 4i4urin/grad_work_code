@@ -4,13 +4,13 @@
  *  Created on: 5 апр. 2023 г.
  *      Author: shishel
  */
-#include "color_musical_illum.h"
+#include "main.h"
 
 #define NOISE_DELAY 	50
 
 u8 _is_power_press = 0;
 u8 _is_mode_press = 0;
-extern u16 _inject[4];
+extern u8 _inject[4];
 
 static void set_device_mode(void);
 
@@ -22,13 +22,13 @@ void TIM3_IRQHandler(void)
 	{
 		static u32 click = 0;
 		click += 1;
-//		if (click % 100 == 0) // every 0,5 sec
+		if (click % 100 == 0) // every 0,5 sec
 //			SWAP_CTRL_LED();
 
-		_inject[0] = ADC1->JDR1;
-		_inject[1] = ADC1->JDR2;
-		_inject[2] = ADC1->JDR3;
-		_inject[3] = ADC1->JDR4;
+		_inject[0] = ADC1->JDR1 / 256;
+		_inject[1] = ADC1->JDR2 / 256;
+		_inject[2] = ADC1->JDR3 / 256;
+		_inject[3] = ADC1->JDR4 / 256;
 
 		TIM3->SR &= ~(TIM_SR_UIF);
 	}
@@ -78,7 +78,12 @@ void set_device_mode(void)
 	else if (_is_mode_press)
 		set_dev_state(E_DEV_WORK);
 	else if (_is_power_press)
-		set_dev_state(E_DEV_SLEEP);
+	{
+		if (get_dev_state() == E_DEV_SLEEP)
+			set_dev_state(E_DEV_WORK);
+		else
+			set_dev_state(E_DEV_SLEEP);
+	}
 
 
 }

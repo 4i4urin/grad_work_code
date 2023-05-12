@@ -8,7 +8,7 @@
 #ifndef FFT_H_
 #define FFT_H_
 
-#include "color_musical_illum.h"
+#include "main.h"
 
 #include "fft_table.h"
 

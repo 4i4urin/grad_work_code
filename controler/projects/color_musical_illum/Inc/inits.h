@@ -9,7 +9,7 @@
 #define INITS_H_
 
 
-#include "color_musical_illum.h"
+#include "main.h"
 
 
 #define MCU_FREQ		64000000 // 64 MHz
@@ -27,6 +27,8 @@
 
 
 void init_device(void);
+void disinit_device(void);
+
 
 
 #endif /* INITS_H_ */
