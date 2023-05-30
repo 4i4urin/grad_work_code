@@ -25,10 +25,10 @@ void TIM3_IRQHandler(void)
 		if (click % 100 == 0) // every 0,5 sec
 //			SWAP_CTRL_LED();
 
-		_inject[0] = ADC1->JDR1 / 256;
-		_inject[1] = ADC1->JDR2 / 256;
-		_inject[2] = ADC1->JDR3 / 256;
-		_inject[3] = ADC1->JDR4 / 256;
+		_inject[I_RED]   = ADC1->JDR1 / 256;
+		_inject[I_GREEN] = ADC1->JDR2 / 256;
+		_inject[I_BLUE]  = ADC1->JDR3 / 256;
+		_inject[I_BLUE]  = ADC1->JDR4 / 256;
 
 		TIM3->SR &= ~(TIM_SR_UIF);
 	}

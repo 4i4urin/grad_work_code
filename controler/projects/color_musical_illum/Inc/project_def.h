@@ -40,8 +40,16 @@
 // for ping-pong buffer
 #define FFT_DATA_POW2 (MEAS_POW2 - 1)
 #define FFT_DATA_NUM  (1 << FFT_DATA_POW2)
+#define FFT_ABS_DATA_NUM (FFT_DATA_NUM >> 1)
 
 #define SAMPL_FRQ 	 24000 //Hz
+
+
+
+#define DELAY_LEN 50
+#define LED_COUNT 34
+#define BUF_LED_SIZE DELAY_LEN + LED_COUNT * 24 + 1
+
 
 
 #define MAX_TX_STR   128
@@ -59,6 +67,11 @@
 
 
 #define MCSEC_IN_SEC 	1000000
+
+#define I_RED 	 0
+#define I_GREEN  1
+#define I_BLUE 	 2
+#define I_BRIGHT 3
 
 
 

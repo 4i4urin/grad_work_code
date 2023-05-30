@@ -71,7 +71,7 @@ typedef struct _t_complex_s8
 } t_complex_s8;
 
 typedef t_complex t_complex_arr[FFT_DATA_NUM];
-typedef u16 	  t_fft_abs_res[FFT_DATA_NUM];
+typedef u16	  	  t_fft_abs_res[FFT_DATA_NUM];
 
 typedef union _t_fft
 {

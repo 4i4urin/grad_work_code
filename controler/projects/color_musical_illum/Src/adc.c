@@ -60,17 +60,15 @@ void TIM4_IRQHandler(void)
 		volt_max = (_pvolts[i] > volt_max) ? _pvolts[i] : volt_max;
 		volt_min = (_pvolts[i] < volt_min) ? _pvolts[i] : volt_min;
 
+		i += 1;
+		
 		if (i == MEAS_HALF_NUM)
-		{
 			_meas_half_ready = 1;
-			i += 1;
-		} else if (i == MEAS_FULL_NUM)
+
+		else if (i == MEAS_FULL_NUM)
 		{
 			_meas_full_ready = 1;
 			i = 0;
-		} else
-		{
-			i += 1;
 		}
 
 		TIM4->SR &= ~(TIM_SR_UIF);

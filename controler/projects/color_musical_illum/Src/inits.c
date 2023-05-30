@@ -72,7 +72,7 @@ void init_ws2815(void) {
 	NVIC_EnableIRQ(TIM2_IRQn); //прерывание от таймера
 	NVIC_EnableIRQ(DMA1_Channel5_IRQn); //прерывание от DMA
 
-	ws2812b_buff_clear();
+	ws2815_buff_clear();
 	TIM2->CR1 |= TIM_CR1_CEN;
 }
 

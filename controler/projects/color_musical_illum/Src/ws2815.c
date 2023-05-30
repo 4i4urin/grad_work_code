@@ -6,16 +6,18 @@
  */
 #include "main.h"
 #include "ws2815.h"
+#include "usart.h"
 
 
-static void ws2812b_send(void);
-static u8 ws2812b_send_dma(void);
+static void ws2815_send(void);
+static u8 ws2815_send_dma(void);
+
+static u16 sum_arr(u16* pstart, u16 size);
 
 
 static u8 _buf_Led[BUF_LED_SIZE] = { 0 };
 static u8 _flag_rdy = 0;
 
-extern u8 _inject[4];
 
 
 u8* get_buf_led_pointer(void)
@@ -24,21 +26,23 @@ u8* get_buf_led_pointer(void)
 }
 
 
-void ws2812b_send(void) {
-	ws2812b_send_dma();
-	while (ws2812b_is_ready() == 0) { }
+void ws2815_send(void) {
+	ws2815_send_dma();
+	while (ws2815_is_ready() == 0) { }
 }
 
-void ws2812b_buff_clear(void) {
+
+void ws2815_buff_clear(void) {
 	for (u16 i = DELAY_LEN; i < BUF_LED_SIZE - 1; i++)
 		_buf_Led[i] = LOW;
 	_buf_Led[BUF_LED_SIZE - 1] = 0;
 }
 
-u8 ws2812b_set(u8 posX, u8 Rpixel, u8 Gpixel,
+
+u8 ws2815_set(u8 posX, u8 Rpixel, u8 Gpixel,
 		u8 Bpixel, u8 bright) {
 
-	if (posX > LED_COUNT || posX < 0)
+	if (posX > LED_COUNT)
 		return 1;
 	if (Rpixel > 15 || Gpixel > 15 || Bpixel > 15)
 		return 2;
@@ -68,7 +72,7 @@ u8 ws2812b_set(u8 posX, u8 Rpixel, u8 Gpixel,
 	return 0;
 }
 
-u8 ws2812b_send_dma(void) {
+u8 ws2815_send_dma(void) {
 	if (_flag_rdy) //Если сейчас ни чего не передается
 	{
 		_flag_rdy = 0;
@@ -77,8 +81,8 @@ u8 ws2812b_send_dma(void) {
 		DMA1_Channel5->CCR &= ~(DMA_CCR_EN); //Отключаем канал DMA
 		DMA1_Channel5->CNDTR = BUF_LED_SIZE; //Устанавливаем количество данных
 
-		TIM2->PSC = PSC_WS2812B - 1;
-		TIM2->ARR = ARR_WS2812B;
+		TIM2->PSC = PSC_WS2815 - 1;
+		TIM2->ARR = ARR_WS2815;
 		TIM2->CCR1 = 0;
 		TIM2->CNT = 0;
 		TIM2->CR1 |= TIM_CR1_CEN; //Запускаем таймер
@@ -96,7 +100,7 @@ u8 ws2812b_send_dma(void) {
 	}
 }
 
-u8 ws2812b_is_ready(void)
+u8 ws2815_is_ready(void)
 {
 	return _flag_rdy;
 }
@@ -118,7 +122,7 @@ void DMA1_Channel5_IRQHandler(void) {
 
 
 //прерывание от таймера
-//Сюда попадаем после завершения формирования сигнала RES шины ws2812b
+//Сюда попадаем после завершения формирования сигнала RES шины ws2815
 void TIM2_IRQHandler(void) {
 	TIM2->SR = 0; //Сбрасываем все флаги прерываний
 	TIM2->CR1 &= ~(TIM_CR1_CEN); //останавливаем таймер
@@ -129,9 +133,9 @@ void TIM2_IRQHandler(void) {
 
 void one_colore_full_led(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 brigh)
 {
-	for (register u16 i = 0; i < BUF_LED_SIZE; i++)
-		ws2812b_set(i, Rpixel, Gpixel, Bpixel, brigh);
-	ws2812b_send_dma();
+	for (register u16 i = 0; i < LED_COUNT; i++)
+		ws2815_set(i, Rpixel, Gpixel, Bpixel, brigh);
+	ws2815_send_dma();
 }
 
 
@@ -150,7 +154,7 @@ void one_colore_running(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 bright)
 
 	for (u8 i = 0; i < LED_COUNT + tail_len; i++) {
 
-		ws2812b_set(i, Rpixel, Gpixel, Bpixel, bright);
+		ws2815_set(i, Rpixel, Gpixel, Bpixel, bright);
 		u8 Rpixel_tail = Rpixel, Gpixel_tail = Gpixel,
 				Bpixel_tail = Bpixel, bright_tail = bright;
 		for (u8 taile = i - 1;
@@ -164,13 +168,13 @@ void one_colore_running(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 bright)
 			Gpixel_tail |= (Gpixel != 0) ? (bright_tail << 3) : 0;
 			Bpixel_tail |= (Bpixel != 0) ? (bright_tail << 3) : 0;
 			bright_tail >>= 1;
-			ws2812b_set(taile, Rpixel_tail, Gpixel_tail, Bpixel_tail,
+			ws2815_set(taile, Rpixel_tail, Gpixel_tail, Bpixel_tail,
 					bright_tail);
 		}
-		ws2812b_send();
+		ws2815_send();
 		delay(100000);
 	}
-	ws2812b_buff_clear();
+	ws2815_buff_clear();
 }
 
 
@@ -180,6 +184,33 @@ u8 calc_tail_len(u8 fourbin) {
 			return offset + 1;
 	}
 	return fourbin;
+}
+
+
+void freq_led_mode(u16* pfft_abs, char* tx_buf)
+{
+	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
+	u16 sum_abs = 0;
+
+	for (register u16 i = 0; i < LED_COUNT; i++)
+	{
+		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
+//		sprintf(tx_buf, "%d\r\n", sum_abs);
+//		tx_str(tx_buf);
+		if (sum_abs > 25)
+			ws2815_set(i, 2, 3, 8, 8);
+		else
+			ws2815_set(i, 0, 0, 0, 0);
+	}
+	ws2815_send_dma();
+}
+
+u16 sum_arr(u16* pstart, u16 size)
+{
+	u16 sum = 0;
+	for (u16 i = 0; i < size; i++)
+		sum += pstart[i];
+	return sum;
 }
 
 
