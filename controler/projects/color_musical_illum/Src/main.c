@@ -27,8 +27,7 @@ int main(void)
 
 		case E_DEV_CALIB:
 			// change number of leds
-//			while (get_dev_state() != E_DEV_SLEEP) { }
-//			set_dev_state(E_DEV_WORK);
+			while (get_dev_state() != E_DEV_WORK) { }
 			break;
 
 		case E_DEV_SLEEP:
@@ -67,6 +66,9 @@ void set_dev_state(e_device_state state)
 		return;
 	}
 	_dev_state = state;
+	char* tx_buf[100];
+	sprintf(tx_buf, "STATE = %d\r\n", state);
+	tx_str(tx_buf);
 }
 
 

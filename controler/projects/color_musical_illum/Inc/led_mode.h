@@ -21,8 +21,9 @@
 #define ARR_FREQ_LIM_4 FREQ_LIM_4 / SINGLE_SAMPLE_RATE
 
 
-void one_colore_running(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 bright);
+void one_colore_running(u8* pctrl);
 void one_colore_full_led(u8* pctrl);
 void freq_led_mode(u16* pfft_abs, u8* preg);
+void freq_led_linear_mode(u16* pfft_abs);
 
 #endif /* LED_MODE_H_ */

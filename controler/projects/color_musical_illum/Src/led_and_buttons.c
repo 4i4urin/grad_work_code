@@ -5,6 +5,7 @@
  *      Author: shishel
  */
 #include "main.h"
+#include "color_musical_illum.h"
 
 #define NOISE_DELAY 	50
 
@@ -46,14 +47,14 @@ void EXTI9_5_IRQHandler(void)
 {
 	if (EXTI->PR & EXTI_PR_PR9) // if PB9
 	{
-		EXTI->PR |= EXTI_PR_PR9; // drop flag
 		delay(NOISE_DELAY);
 		if (GPIOB->IDR & GPIO_IDR_IDR9) // if PB9 == 1
 			return;
 
 		_is_power_press = 1;
+		EXTI->PR |= EXTI_PR_PR9; // drop flag
+		set_device_mode();
 	}
-	set_device_mode();
 }
 
 
@@ -62,14 +63,14 @@ void EXTI15_10_IRQHandler(void)
 {
 	if (EXTI->PR & EXTI_PR_PR15) // if PB15
 	{
-		EXTI->PR |= EXTI_PR_PR15; // drop flag
-		delay(NOISE_DELAY);
+		delay(NOISE_DELAY * 200);
 		if (GPIOB->IDR & GPIO_IDR_IDR15) // if PB15 == 1
 			return;
 
 		_is_mode_press = 1;
+		EXTI->PR |= EXTI_PR_PR15; // drop flag
+		set_device_mode();
 	}
-	set_device_mode();
 }
 
 
@@ -80,9 +81,22 @@ void set_device_mode(void)
 	_is_power_press = (GPIOB->IDR & GPIO_IDR_IDR9)  ? 0 : 1;
 
 	if (_is_mode_press && _is_power_press)
-		set_dev_state(E_DEV_CALIB);
-	else if (_is_mode_press)
-		set_dev_state(E_DEV_WORK);
+	{
+		if (get_dev_state() == E_DEV_CALIB)
+			set_dev_state(E_DEV_WORK);
+		else
+			set_dev_state(E_DEV_CALIB);
+	}
+
+	if (get_dev_state() == E_DEV_CALIB)
+		return;
+
+	if (_is_mode_press)
+	{
+		u8 mode = get_ilum_mode();
+		set_ilum_mode(mode + 1);
+		//set_dev_state(E_DEV_WORK);
+	}
 	else if (_is_power_press)
 	{
 		if (get_dev_state() == E_DEV_SLEEP)
@@ -91,6 +105,7 @@ void set_device_mode(void)
 			set_dev_state(E_DEV_SLEEP);
 	}
 }
+
 
 inline u8* get_pctrl_panel(void)
 {

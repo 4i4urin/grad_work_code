@@ -33,6 +33,7 @@
 
 
 #define USE_BRIGHT 0
+#define NUM_ILUM_MODE 4
 
 
 #define MEAS_POW2     12

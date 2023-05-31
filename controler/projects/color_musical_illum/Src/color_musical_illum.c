@@ -17,8 +17,7 @@
 
 static u8 meas_max_ampl(u8* pvolts, u16 number);
 
-static void show_u16(u16* parr, u16 size);
-static void show_u8(u8* parr, u16 size);
+static void clear_led(void);
 
 
 u8 _meas_full_ready = 0;
@@ -28,6 +27,8 @@ char _tx_buf[MAX_TX_STR] = { 0 };
 
 u8  _volts[MEAS_FULL_NUM] = { 0 };
 u8* _pvolts = _volts;
+
+u8 _ilum_mode = 0;
 
 t_fft _fft = { 0 };
 u16* _pfft_abs = _fft.abs_res;
@@ -50,51 +51,52 @@ void coloor_music(void)
 	} else
 		return;
 
-	if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
-	{
-		sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
-						get_depot_res(), max_ampl);
-		tx_str(_tx_buf);
-		ws2815_buff_clear();
-		ws2815_send();
-		return;
-	}
-
 	sprintf(_tx_buf, "dpot = %d\tampl = %d\r\n",
 			get_depot_res(), max_ampl);
 	tx_str(_tx_buf);
 
 	*_pfft_abs = 0;
 	OFF_CTRL_LED();
-
-//	one_colore_full_led(get_pctrl_panel());
-	freq_led_mode(_pfft_abs, get_pctrl_panel());
-}
-
-
-void show_u8(u8* parr, u16 size)
-{
-	for (u16 i = 0; i < size; i++)
+	switch (get_ilum_mode())
 	{
-		sprintf(_tx_buf, "%d\r\n", parr[i]);
-		tx_str(_tx_buf);
-	}
-}
-
-void show_u16(u16* parr, u16 size)
-{
-	for (u16 i = 0; i < size; i++)
-	{
-		sprintf(_tx_buf, "-");
-		tx_str(_tx_buf);
-		while (parr[i] > 0)
+	case 0: // sound
+		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
 		{
-			sprintf(_tx_buf, "-");
-			tx_str(_tx_buf);
-			parr[i] -= 1;
+			clear_led();
+			break;
 		}
-		tx_str("\r\n");
+		freq_led_mode(_pfft_abs, get_pctrl_panel());
+		break;
+
+	case 1: // sound
+		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+		{
+			clear_led();
+			break;
+		}
+		freq_led_linear_mode(_pfft_abs);
+		break;
+
+	case 2:
+		one_colore_full_led(get_pctrl_panel());
+		break;
+
+	case 3:
+		//one_colore_running(get_pctrl_panel());
+		break;
+
+	default:
+		clear_led();
+		break;
 	}
+}
+
+
+void clear_led(void)
+{
+	tx_str("OFF LED OFF LED\r\n");
+	ws2815_buff_clear();
+	ws2815_send();
 }
 
 
@@ -112,3 +114,17 @@ u8 meas_max_ampl(u8* pvolts, u16 number)
 	return max - min;
 }
 
+
+inline u8 get_ilum_mode(void)
+{
+	return _ilum_mode;
+}
+
+void set_ilum_mode(u8 new_mode)
+{
+	if (new_mode >= NUM_ILUM_MODE)
+		new_mode = 0;
+	_ilum_mode = new_mode;
+	sprintf(_tx_buf, "MODE = %d\r\n", _ilum_mode);
+	tx_str(_tx_buf);
+}

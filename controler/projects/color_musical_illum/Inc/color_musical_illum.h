@@ -11,6 +11,8 @@
 
 
 void coloor_music(void);
+u8 get_ilum_mode(void);
+void set_ilum_mode(u8 new_mode);
 
 
 #endif /* COLOR_MUSICAL_ILLUM_H_ */

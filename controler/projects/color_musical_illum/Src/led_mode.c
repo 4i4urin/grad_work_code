@@ -23,8 +23,10 @@ void one_colore_full_led(u8* pctrl)
 }
 
 
-void one_colore_running(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 bright)
+void one_colore_running(u8* pctrl)
 {
+	u8 Rpixel = pctrl[I_RED];  u8 Gpixel = pctrl[I_GREEN];
+	u8 Bpixel = pctrl[I_BLUE]; u8 bright = pctrl[I_BRIGHT];
 
 	u8 tail_len = calc_tail_len(bright);
 	if (Rpixel > Gpixel)
@@ -51,8 +53,8 @@ void one_colore_running(u8 Rpixel, u8 Gpixel, u8 Bpixel, u8 bright)
 			ws2815_set(taile, Rpixel_tail, Gpixel_tail, Bpixel_tail,
 					bright_tail);
 		}
-		ws2815_send();
-		delay(100000);
+		ws2815_send_dma();
+		delay(10000);
 	}
 	ws2815_buff_clear();
 }
@@ -69,21 +71,6 @@ u8 calc_tail_len(u8 fourbin) {
 
 void freq_led_mode(u16* pfft_abs, u8* pctrl)
 {
-//	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
-//	u16 sum_abs = 0;
-//
-//	for (register u16 i = 0; i < LED_COUNT; i++)
-//	{
-//		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
-////		sprintf(tx_buf, "%d\r\n", sum_abs);
-////		tx_str(tx_buf);
-//		if (sum_abs > 25)
-//			ws2815_set(i, 2, 3, 8, 8);
-//		else
-//			ws2815_set(i, 0, 0, 0, 0);
-//	}
-//	ws2815_send_dma();
-
 	t_freq_led freq_band[NUM_BAND] = { 0 };
 	u8 turnon_border = init_freq_band(freq_band, pfft_abs) / LED_COUNT;
 	u8 led_pos = 0;
@@ -101,6 +88,25 @@ void freq_led_mode(u16* pfft_abs, u8* pctrl)
 			freq_band[i].p_freq_arr += counts_per_LED;
 		}
 		led_pos_start = led_pos;
+	}
+	ws2815_send_dma();
+}
+
+
+void freq_led_linear_mode(u16* pfft_abs)
+{
+	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
+	u16 sum_abs = 0;
+
+	for (register u16 i = 0; i < LED_COUNT; i++)
+	{
+		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
+//		sprintf(tx_buf, "%d\r\n", sum_abs);
+//		tx_str(tx_buf);
+		if (sum_abs > 25)
+			ws2815_set(i, 2, 3, 8, 8);
+		else
+			ws2815_set(i, 0, 0, 0, 0);
 	}
 	ws2815_send_dma();
 }
