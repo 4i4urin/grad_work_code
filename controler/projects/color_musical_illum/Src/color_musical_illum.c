@@ -40,24 +40,48 @@ void coloor_music(void)
 
 	if (_meas_half_ready)
 	{
+		u8 max_ampl = meas_max_ampl(_pvolts, MEAS_HALF_NUM);
 		sprintf(_tx_buf, "1 dpot = %d\tampl = %d\r\n",
-				get_depot_res(), meas_max_ampl(_pvolts, MEAS_HALF_NUM));
+				get_depot_res(), max_ampl);
 
 		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts);
 		*_pfft_abs = 0;
 		_meas_half_ready = 0;
+
+		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+		{
+			sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
+							get_depot_res(), max_ampl);
+			tx_str(_tx_buf);
+			ws2815_buff_clear();
+			ws2815_send();
+			return;
+		}
+
 		tx_str(_tx_buf);
 		OFF_CTRL_LED();
 		if (ws2815_is_ready())
 			freq_led_mode(_pfft_abs, _tx_buf);
 	} else if (_meas_full_ready)
 	{
+		u8 max_ampl = meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM);
 		sprintf(_tx_buf, "2 dpot = %d\tampl = %d\r\n",
-				get_depot_res(), meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM));
+				get_depot_res(), max_ampl);
 
 		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts + MEAS_HALF_NUM);
 		*_pfft_abs = 0;
 		_meas_full_ready = 0;
+
+		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+		{
+			sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
+										get_depot_res(), max_ampl);
+			tx_str(_tx_buf);
+			ws2815_buff_clear();
+			ws2815_send();
+			return;
+		}
+
 		tx_str(_tx_buf);
 		OFF_CTRL_LED();
 		if (ws2815_is_ready())

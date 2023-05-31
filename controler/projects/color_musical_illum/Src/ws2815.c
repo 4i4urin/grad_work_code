@@ -9,10 +9,11 @@
 #include "usart.h"
 
 
-static void ws2815_send(void);
+//static void ws2815_send(void);
 static u8 ws2815_send_dma(void);
 
 static u16 sum_arr(u16* pstart, u16 size);
+static u16 init_freq_band(t_freq_led* pfreq_band, u16* pfft_abs, char* tx_buf);
 
 
 static u8 _buf_Led[BUF_LED_SIZE] = { 0 };
@@ -189,21 +190,86 @@ u8 calc_tail_len(u8 fourbin) {
 
 void freq_led_mode(u16* pfft_abs, char* tx_buf)
 {
-	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
-	u16 sum_abs = 0;
+//	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
+//	u16 sum_abs = 0;
+//
+//	for (register u16 i = 0; i < LED_COUNT; i++)
+//	{
+//		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
+////		sprintf(tx_buf, "%d\r\n", sum_abs);
+////		tx_str(tx_buf);
+//		if (sum_abs > 25)
+//			ws2815_set(i, 2, 3, 8, 8);
+//		else
+//			ws2815_set(i, 0, 0, 0, 0);
+//	}
+//	ws2815_send_dma();
 
-	for (register u16 i = 0; i < LED_COUNT; i++)
+	t_freq_led freq_band[NUM_BAND] = { 0 };
+	u8 turnon_border = init_freq_band(freq_band, pfft_abs, tx_buf) / LED_COUNT;
+	u8 led_pos = 0;
+	u8 led_pos_start = 0;
+	for (u8 i = 0; i < NUM_BAND; i++)
 	{
-		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
-//		sprintf(tx_buf, "%d\r\n", sum_abs);
-//		tx_str(tx_buf);
-		if (sum_abs > 25)
-			ws2815_set(i, 2, 3, 8, 8);
-		else
-			ws2815_set(i, 0, 0, 0, 0);
+		u8 counts_per_LED = freq_band[i].size_freq / freq_band[i].num_led;
+		for ( ; led_pos < freq_band[i].num_led + led_pos_start; led_pos++)
+		{
+//			sprintf(tx_buf, "%2d:\t%d\r\n", led_pos,
+//					(sum_arr(freq_band[i].p_freq_arr, counts_per_LED) > turnon_border) ? 1 : 0);
+//			tx_str(tx_buf);
+			if (sum_arr(freq_band[i].p_freq_arr, counts_per_LED) > turnon_border)
+				ws2815_set(led_pos, 7, 0, 3, 7);
+			else
+				ws2815_set(led_pos, 0, 0, 0, 0);
+			freq_band[i].p_freq_arr += counts_per_LED;
+		}
+		led_pos_start = led_pos;
 	}
 	ws2815_send_dma();
 }
+
+
+u16 init_freq_band(t_freq_led* pfreq_band, u16* pfft_abs, char* tx_buf)
+{
+	u16 abs_sum = 0;
+	u16 band_width[NUM_BAND] = { 0 };
+	// fix me
+	band_width[0] = FREQ_LIM_1 / SINGLE_SAMPLE_RATE;
+	band_width[1] = FREQ_LIM_2 / SINGLE_SAMPLE_RATE;
+	band_width[2] = FREQ_LIM_3 / SINGLE_SAMPLE_RATE;
+	band_width[3] = FREQ_LIM_4 / SINGLE_SAMPLE_RATE;
+	band_width[3] = (band_width[3] > FFT_ABS_DATA_NUM) ? FFT_ABS_DATA_NUM
+													   : band_width[3];
+
+	u8 num_led_in_band = LED_COUNT / NUM_BAND;
+	u8 num_led_mod = LED_COUNT % NUM_BAND;
+
+	pfreq_band[0].num_led = num_led_in_band;
+	pfreq_band[0].p_freq_arr = pfft_abs;
+	pfreq_band[0].size_freq = band_width[0];
+	pfreq_band[0].sum_freq = sum_arr(pfreq_band[0].p_freq_arr, pfreq_band[0].size_freq);
+
+	abs_sum += pfreq_band[0].sum_freq;
+
+	sprintf(tx_buf, "%d; %p; %d;\t%d\r\n", pfreq_band[0].num_led, pfreq_band[0].p_freq_arr,
+					pfreq_band[0].size_freq, pfreq_band[0].sum_freq);
+	tx_str(tx_buf);
+
+	for (u8 i = 1; i < NUM_BAND; i++)
+	{
+		pfreq_band[i].num_led = (i == 1) ? num_led_in_band + num_led_mod : num_led_in_band;
+		pfreq_band[i].p_freq_arr = pfft_abs + pfreq_band[i - 1].size_freq;
+		pfreq_band[i].size_freq = band_width[i] - band_width[i - 1];
+		pfreq_band[i].sum_freq = sum_arr(pfreq_band[i].p_freq_arr, pfreq_band[i].size_freq);
+
+		abs_sum += pfreq_band[i].sum_freq;
+		sprintf(tx_buf, "%d; %p; %d;\t%d\r\n", pfreq_band[i].num_led, pfreq_band[i].p_freq_arr,
+				pfreq_band[i].size_freq, pfreq_band[i].sum_freq);
+		tx_str(tx_buf);
+	}
+	return abs_sum;
+}
+
 
 u16 sum_arr(u16* pstart, u16 size)
 {

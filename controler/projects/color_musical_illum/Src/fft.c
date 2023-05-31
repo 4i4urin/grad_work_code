@@ -53,7 +53,8 @@ u16 isqrt_newton(const u32 val)
 		x0 = x1;
 		x1 = (x0 + val / x0) >> 1;
 	}
-	return (u16) x0;
+	// was return (u16) x0;
+	return (u16) (x0 <= 1) ? 0 : x0;
 }
 
 
