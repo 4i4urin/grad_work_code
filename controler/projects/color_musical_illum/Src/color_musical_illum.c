@@ -12,14 +12,13 @@
 #include "usart.h"
 #include "fft.h"
 #include "ws2815.h"
+#include "led_mode.h"
 
 
-u8 meas_max_ampl(u8* pvolts, u16 number);
+static u8 meas_max_ampl(u8* pvolts, u16 number);
 
 static void show_u16(u16* parr, u16 size);
 static void show_u8(u8* parr, u16 size);
-
-u8 _inject[4] = { 0 };
 
 
 u8 _meas_full_ready = 0;
@@ -37,61 +36,39 @@ t_complex* _pfft_res = _fft.cmpx_val;
 
 void coloor_music(void)
 {
-
+	u8 max_ampl = 0;
 	if (_meas_half_ready)
 	{
-		u8 max_ampl = meas_max_ampl(_pvolts, MEAS_HALF_NUM);
-		sprintf(_tx_buf, "1 dpot = %d\tampl = %d\r\n",
-				get_depot_res(), max_ampl);
-
 		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts);
-		*_pfft_abs = 0;
+		max_ampl = meas_max_ampl(_pvolts, MEAS_HALF_NUM);
 		_meas_half_ready = 0;
-
-		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
-		{
-			sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
-							get_depot_res(), max_ampl);
-			tx_str(_tx_buf);
-			ws2815_buff_clear();
-			ws2815_send();
-			return;
-		}
-
-		tx_str(_tx_buf);
-		OFF_CTRL_LED();
-		if (ws2815_is_ready())
-			freq_led_mode(_pfft_abs, _tx_buf);
 	} else if (_meas_full_ready)
 	{
-		u8 max_ampl = meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM);
-		sprintf(_tx_buf, "2 dpot = %d\tampl = %d\r\n",
-				get_depot_res(), max_ampl);
-
 		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts + MEAS_HALF_NUM);
-		*_pfft_abs = 0;
+		max_ampl = meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM);
 		_meas_full_ready = 0;
+	} else
+		return;
 
-		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
-		{
-			sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
-										get_depot_res(), max_ampl);
-			tx_str(_tx_buf);
-			ws2815_buff_clear();
-			ws2815_send();
-			return;
-		}
-
+	if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+	{
+		sprintf(_tx_buf, "OFF dpot = %d\tampl = %d\r\n",
+						get_depot_res(), max_ampl);
 		tx_str(_tx_buf);
-		OFF_CTRL_LED();
-		if (ws2815_is_ready())
-			freq_led_mode(_pfft_abs, _tx_buf);
+		ws2815_buff_clear();
+		ws2815_send();
+		return;
 	}
 
+	sprintf(_tx_buf, "dpot = %d\tampl = %d\r\n",
+			get_depot_res(), max_ampl);
+	tx_str(_tx_buf);
 
+	*_pfft_abs = 0;
+	OFF_CTRL_LED();
 
-
-	//one_colore_full_led(_inject[I_RED], _inject[I_GREEN], _inject[I_BLUE], _inject[I_BRIGHT]);
+//	one_colore_full_led(get_pctrl_panel());
+	freq_led_mode(_pfft_abs, get_pctrl_panel());
 }
 
 

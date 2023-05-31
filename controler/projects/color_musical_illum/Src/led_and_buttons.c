@@ -10,7 +10,13 @@
 
 u8 _is_power_press = 0;
 u8 _is_mode_press = 0;
-extern u8 _inject[4];
+u8 _inject[4] = { 0 };
+
+#if USE_BRIGHT
+	u8 _adc_offset = 8;
+#else
+	u8 _adc_offset = 4;
+#endif
 
 static void set_device_mode(void);
 
@@ -25,10 +31,10 @@ void TIM3_IRQHandler(void)
 		if (click % 100 == 0) // every 0,5 sec
 //			SWAP_CTRL_LED();
 
-		_inject[I_RED]   = ADC1->JDR1 / 256;
-		_inject[I_GREEN] = ADC1->JDR2 / 256;
-		_inject[I_BLUE]  = ADC1->JDR3 / 256;
-		_inject[I_BLUE]  = ADC1->JDR4 / 256;
+		_inject[I_RED]   = ADC1->JDR1 >> _adc_offset;
+		_inject[I_GREEN] = ADC1->JDR2 >> _adc_offset;
+		_inject[I_BLUE]  = ADC1->JDR3 >> _adc_offset;
+		_inject[I_BRIGHT]= ADC1->JDR4 >> _adc_offset;
 
 		TIM3->SR &= ~(TIM_SR_UIF);
 	}
@@ -84,7 +90,11 @@ void set_device_mode(void)
 		else
 			set_dev_state(E_DEV_SLEEP);
 	}
-
-
 }
+
+inline u8* get_pctrl_panel(void)
+{
+	return _inject;
+}
+
 

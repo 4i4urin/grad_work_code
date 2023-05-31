@@ -32,6 +32,8 @@
 #define MCU_FREQ		64000000 // 64 MHz
 
 
+#define USE_BRIGHT 0
+
 
 #define MEAS_POW2     12
 #define MEAS_FULL_NUM (1 << MEAS_POW2) // Number of ADC measurements
@@ -47,7 +49,7 @@
 
 
 #define DELAY_LEN 50
-#define LED_COUNT 34
+#define LED_COUNT 20
 #define BUF_LED_SIZE DELAY_LEN + LED_COUNT * 24 + 1
 
 

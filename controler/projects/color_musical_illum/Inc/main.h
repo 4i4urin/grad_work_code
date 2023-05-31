@@ -23,6 +23,8 @@
 void set_dev_state(e_device_state state);
 e_device_state get_dev_state(void);
 
+u8* get_pctrl_panel(void);
+
 
 // just delay should be in whole project
 void delay(u32 del_val);

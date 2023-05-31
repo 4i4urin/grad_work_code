@@ -85,7 +85,6 @@ typedef struct _t_freq_led
 	u8 num_led;
 	u16* p_freq_arr;
 	u16 size_freq;
-	u16 sum_freq;
 } t_freq_led;
 
 
