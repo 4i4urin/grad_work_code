@@ -17,7 +17,7 @@ static u8 calc_tail_len(u8 bright);
 
 void one_colore_full_led(u8* pctrl)
 {
-	for (register u16 i = 0; i < LED_COUNT; i++)
+	for (register u16 i = 0; i < get_num_led(); i++)
 		ws2815_set_control(i, pctrl);
 	ws2815_send_dma();
 }
@@ -34,11 +34,11 @@ void one_colore_running(u8* pctrl)
 	else
 		tail_len +=	(Gpixel > Bpixel) ?	calc_tail_len(Gpixel) : calc_tail_len(Bpixel);
 
-	for (u8 i = 0; i < LED_COUNT + tail_len; i++) {
+	for (u8 i = 0; i < get_num_led() + tail_len; i++) {
 
 		ws2815_set(i, Rpixel, Gpixel, Bpixel, bright);
 		u8 Rpixel_tail = Rpixel, Gpixel_tail = Gpixel,
-				Bpixel_tail = Bpixel, bright_tail = bright;
+		   Bpixel_tail = Bpixel, bright_tail = bright;
 		for (u8 taile = i - 1;
 				taile >= 0	&& (Rpixel_tail || Gpixel_tail || Bpixel_tail || bright_tail);
 				taile--) {
@@ -72,7 +72,7 @@ u8 calc_tail_len(u8 fourbin) {
 void freq_led_mode(u16* pfft_abs, u8* pctrl)
 {
 	t_freq_led freq_band[NUM_BAND] = { 0 };
-	u8 turnon_border = init_freq_band(freq_band, pfft_abs) / LED_COUNT;
+	u8 turnon_border = init_freq_band(freq_band, pfft_abs) / get_num_led();
 	u8 led_pos = 0;
 	u8 led_pos_start = 0;
 	for (u8 i = 0; i < NUM_BAND; i++)
@@ -95,10 +95,10 @@ void freq_led_mode(u16* pfft_abs, u8* pctrl)
 
 void freq_led_linear_mode(u16* pfft_abs)
 {
-	u16 led_sum = (u16) FFT_ABS_DATA_NUM / LED_COUNT;
+	u16 led_sum = (u16) FFT_ABS_DATA_NUM / get_num_led();
 	u16 sum_abs = 0;
 
-	for (register u16 i = 0; i < LED_COUNT; i++)
+	for (register u16 i = 0; i < get_num_led(); i++)
 	{
 		sum_abs = sum_arr(pfft_abs + (i * led_sum), led_sum);
 //		sprintf(tx_buf, "%d\r\n", sum_abs);
@@ -121,8 +121,8 @@ u16 init_freq_band(t_freq_led* pfreq_band, u16* pfft_abs)
 	band_width[NUM_BAND - 1] = (band_width[NUM_BAND - 1] > FFT_ABS_DATA_NUM)
 							 ? FFT_ABS_DATA_NUM : band_width[NUM_BAND - 1];
 
-	u8 num_led_in_band = LED_COUNT / NUM_BAND;
-	u8 num_led_mod = LED_COUNT % NUM_BAND;
+	u8 num_led_in_band = get_num_led() / NUM_BAND;
+	u8 num_led_mod = get_num_led() % NUM_BAND;
 
 	pfreq_band[0].num_led = num_led_in_band;
 	pfreq_band[0].p_freq_arr = pfft_abs;

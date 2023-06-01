@@ -50,8 +50,8 @@
 
 
 #define DELAY_LEN 50
-#define LED_COUNT 20
-#define BUF_LED_SIZE DELAY_LEN + LED_COUNT * 24 + 1
+#define MAX_LED_COUNT 20
+#define BUF_LED_SIZE DELAY_LEN + MAX_LED_COUNT * 24 + 1
 
 
 

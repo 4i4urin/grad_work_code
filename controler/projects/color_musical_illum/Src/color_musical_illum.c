@@ -17,7 +17,7 @@
 
 static u8 meas_max_ampl(u8* pvolts, u16 number);
 
-static void clear_led(void);
+u8 _num_led = 10;
 
 
 u8 _meas_full_ready = 0;
@@ -115,10 +115,11 @@ u8 meas_max_ampl(u8* pvolts, u16 number)
 }
 
 
-inline u8 get_ilum_mode(void)
+u8 get_ilum_mode(void)
 {
 	return _ilum_mode;
 }
+
 
 void set_ilum_mode(u8 new_mode)
 {
@@ -127,4 +128,17 @@ void set_ilum_mode(u8 new_mode)
 	_ilum_mode = new_mode;
 	sprintf(_tx_buf, "MODE = %d\r\n", _ilum_mode);
 	tx_str(_tx_buf);
+}
+
+
+inline u8 get_num_led(void)
+{
+	return _num_led;
+}
+
+void set_num_led(u8 number)
+{
+	if (number > MAX_LED_COUNT)
+		return;
+	_num_led = number;
 }

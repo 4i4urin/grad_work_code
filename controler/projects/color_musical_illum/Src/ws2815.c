@@ -41,7 +41,7 @@ u8 ws2815_set(u8 posX,
 		u8 Rpixel, u8 Gpixel,
 		u8 Bpixel, u8 bright) {
 
-	if (posX > LED_COUNT)
+	if (posX > get_num_led())
 		return 1;
 
 	u8 limit = 0xFF;

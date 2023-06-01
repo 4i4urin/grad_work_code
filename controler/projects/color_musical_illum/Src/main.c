@@ -2,11 +2,14 @@
 
 #include "color_musical_illum.h"
 #include "inits.h"
+#include "led_mode.h"
+#include "ws2815.h"
 
 
-void sleep(void);
+static void sleep(void);
+static void calib_led(void);
 
-
+char tx_buf[100] = { 0 };
 e_device_state _dev_state = E_DEV_WORK;
 
 
@@ -27,7 +30,10 @@ int main(void)
 
 		case E_DEV_CALIB:
 			// change number of leds
-			while (get_dev_state() != E_DEV_WORK) { }
+			reset_mode_button();
+			reset_power_button();
+			while (get_dev_state() != E_DEV_SLEEP)
+				calib_led();
 			break;
 
 		case E_DEV_SLEEP:
@@ -38,6 +44,45 @@ int main(void)
 			break;
 		}
 	}
+}
+
+
+void calib_led(void)
+{
+
+	if ( get_mode_press() )
+	{
+		delay(10000);
+		if ( get_power_press() )
+		{
+			tx_str("SHIIIISH\r\n");
+			set_dev_state(E_DEV_SLEEP);
+			return;
+		}
+		u8 num_led = get_num_led();
+		set_num_led(num_led + 1);
+		reset_mode_button();
+		sprintf(tx_buf, "ADD %d\r\n", get_num_led());
+		tx_str(tx_buf);
+	}
+
+	if ( get_power_press() )
+	{
+		if ( get_mode_press() )
+		{
+			tx_str("2_SHIIIISH\r\n");
+			set_dev_state(E_DEV_SLEEP);
+			return;
+		}
+		u8 num_led = get_num_led();
+		set_num_led(num_led - 1);
+		reset_power_button();
+		sprintf(tx_buf, "DELETE %d\r\n", get_num_led());
+		tx_str(tx_buf);
+		clear_led();
+	}
+	if (ws2815_is_ready())
+		one_colore_full_led(get_pctrl_panel());
 }
 
 
@@ -66,7 +111,6 @@ void set_dev_state(e_device_state state)
 		return;
 	}
 	_dev_state = state;
-	char* tx_buf[100];
 	sprintf(tx_buf, "STATE = %d\r\n", state);
 	tx_str(tx_buf);
 }

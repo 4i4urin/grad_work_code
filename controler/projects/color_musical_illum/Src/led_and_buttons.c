@@ -83,9 +83,10 @@ void set_device_mode(void)
 	if (_is_mode_press && _is_power_press)
 	{
 		if (get_dev_state() == E_DEV_CALIB)
-			set_dev_state(E_DEV_WORK);
-		else
+			set_dev_state(E_DEV_SLEEP);
+		else if (get_dev_state() == E_DEV_SLEEP)
 			set_dev_state(E_DEV_CALIB);
+		return;
 	}
 
 	if (get_dev_state() == E_DEV_CALIB)
@@ -95,6 +96,7 @@ void set_device_mode(void)
 	{
 		u8 mode = get_ilum_mode();
 		set_ilum_mode(mode + 1);
+		return;
 		//set_dev_state(E_DEV_WORK);
 	}
 	else if (_is_power_press)
@@ -103,6 +105,7 @@ void set_device_mode(void)
 			set_dev_state(E_DEV_WORK);
 		else
 			set_dev_state(E_DEV_SLEEP);
+		return;
 	}
 }
 
@@ -111,5 +114,26 @@ inline u8* get_pctrl_panel(void)
 {
 	return _inject;
 }
+
+inline u8 get_power_press(void)
+{
+	return _is_power_press;
+}
+
+inline u8 get_mode_press(void)
+{
+	return _is_mode_press;
+}
+
+inline void reset_mode_button(void)
+{
+	_is_mode_press = 0;
+}
+
+inline void reset_power_button(void)
+{
+	_is_power_press = 0;
+}
+
 
 
