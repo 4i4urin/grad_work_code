@@ -71,6 +71,8 @@ void init_ws2815(void) {
 
 	NVIC_EnableIRQ(TIM2_IRQn); //прерывание от таймера
 	NVIC_EnableIRQ(DMA1_Channel5_IRQn); //прерывание от DMA
+	NVIC_SetPriority(TIM2_IRQn, 3);
+	NVIC_SetPriority(DMA1_Channel5_IRQn, 3);
 
 	ws2815_buff_clear();
 	TIM2->CR1 |= TIM_CR1_CEN;
@@ -96,10 +98,10 @@ void init_buttons(void)
 	EXTI->IMR |= (EXTI_IMR_IM9 | EXTI_IMR_IM15); // enable exti
 
 	NVIC_EnableIRQ(EXTI9_5_IRQn);
-	NVIC_SetPriority(EXTI9_5_IRQn, 0);
+	NVIC_SetPriority(EXTI9_5_IRQn, 4);
 
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
-	NVIC_SetPriority(EXTI15_10_IRQn, 1);
+	NVIC_SetPriority(EXTI15_10_IRQn, 4);
 }
 
 
@@ -117,7 +119,7 @@ void init_tim4(void)
 	TIM4->DIER |= TIM_DIER_UIE; // enable interrupts by update
 
 	NVIC_EnableIRQ(TIM4_IRQn);				//Рарзрешить прерывание от TIM4
-	NVIC_SetPriority(TIM4_IRQn, 1);			//Выставляем приоритет
+	NVIC_SetPriority(TIM4_IRQn, 0);			//Выставляем приоритет
 }
 
 

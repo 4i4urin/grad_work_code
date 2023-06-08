@@ -81,9 +81,6 @@ void coloor_music(void)
 		one_colore_full_led(get_pctrl_panel());
 		break;
 
-	case 3:
-		//one_colore_running(get_pctrl_panel());
-		break;
 
 	default:
 		clear_led();

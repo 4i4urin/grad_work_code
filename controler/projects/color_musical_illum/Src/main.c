@@ -4,6 +4,7 @@
 #include "inits.h"
 #include "led_mode.h"
 #include "ws2815.h"
+#include "usart.h"
 
 
 static void sleep(void);
@@ -32,8 +33,10 @@ int main(void)
 			// change number of leds
 			reset_mode_button();
 			reset_power_button();
-			while (get_dev_state() != E_DEV_SLEEP)
+			while (get_dev_state() == E_DEV_CALIB)
 				calib_led();
+			reset_mode_button();
+			reset_power_button();
 			break;
 
 		case E_DEV_SLEEP:
@@ -49,16 +52,12 @@ int main(void)
 
 void calib_led(void)
 {
+	delay(100000);
+	if (get_mode_press() && get_power_press())
+		return;
 
 	if ( get_mode_press() )
 	{
-		delay(10000);
-		if ( get_power_press() )
-		{
-			tx_str("SHIIIISH\r\n");
-			set_dev_state(E_DEV_SLEEP);
-			return;
-		}
 		u8 num_led = get_num_led();
 		set_num_led(num_led + 1);
 		reset_mode_button();
@@ -68,12 +67,6 @@ void calib_led(void)
 
 	if ( get_power_press() )
 	{
-		if ( get_mode_press() )
-		{
-			tx_str("2_SHIIIISH\r\n");
-			set_dev_state(E_DEV_SLEEP);
-			return;
-		}
 		u8 num_led = get_num_led();
 		set_num_led(num_led - 1);
 		reset_power_button();
@@ -91,9 +84,11 @@ void sleep(void)
 	//disinit_device();
 	OFF_LED_POWER();
 	while (get_dev_state() == E_DEV_SLEEP) { };
+	set_ilum_mode(0);
 	ON_LED_POWER();
+
 	//init_device();
-	delay(1000000);
+	//delay(1000000);
 }
 
 
@@ -110,9 +105,12 @@ void set_dev_state(e_device_state state)
 	default:
 		return;
 	}
+	reset_mode_button();
+	reset_power_button();
 	_dev_state = state;
 	sprintf(tx_buf, "STATE = %d\r\n", state);
 	tx_str(tx_buf);
+	delay(1000000);
 }
 
 

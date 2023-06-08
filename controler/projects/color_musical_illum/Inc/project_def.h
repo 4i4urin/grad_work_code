@@ -33,7 +33,7 @@
 
 
 #define USE_BRIGHT 0
-#define NUM_ILUM_MODE 4
+#define NUM_ILUM_MODE 3
 
 
 #define MEAS_POW2     12
@@ -50,7 +50,7 @@
 
 
 #define DELAY_LEN 50
-#define MAX_LED_COUNT 20
+#define MAX_LED_COUNT 40
 #define BUF_LED_SIZE DELAY_LEN + MAX_LED_COUNT * 24 + 1
 
 
@@ -67,6 +67,28 @@
 
 #define ON_LED_POWER() 	GPIOB->BSRR = GPIO_BSRR_BS7
 #define OFF_LED_POWER() GPIOB->BSRR = GPIO_BSRR_BR7
+
+
+#define DISABLE_NVIC() 	NVIC_DisableIRQ(TIM2_IRQn); \
+						NVIC_DisableIRQ(DMA1_Channel5_IRQn); \
+						NVIC_DisableIRQ(EXTI9_5_IRQn); \
+						NVIC_DisableIRQ(EXTI15_10_IRQn); \
+						NVIC_DisableIRQ(TIM4_IRQn); \
+						NVIC_DisableIRQ(TIM3_IRQn); \
+						NVIC_DisableIRQ(USART3_IRQn);
+
+#define ENABLE_NVIC()	NVIC_EnableIRQ(TIM2_IRQn); \
+						NVIC_EnableIRQ(DMA1_Channel5_IRQn); \
+						NVIC_EnableIRQ(EXTI9_5_IRQn); \
+						NVIC_EnableIRQ(EXTI15_10_IRQn); \
+						NVIC_EnableIRQ(TIM4_IRQn); \
+						NVIC_EnableIRQ(TIM3_IRQn); \
+						NVIC_EnableIRQ(USART3_IRQn);
+
+
+
+
+
 
 
 #define MCSEC_IN_SEC 	1000000
