@@ -5,19 +5,23 @@
 #include "led_mode.h"
 #include "ws2815.h"
 #include "usart.h"
+#include "flash.h"
 
 
 static void sleep(void);
 static void calib_led(void);
 
 char tx_buf[100] = { 0 };
-e_device_state _dev_state = E_DEV_WORK;
+e_device_state _dev_state = E_DEV_SLEEP;
 
 
 int main(void)
 {
 	init_device();
 	delay(1000000);
+	u16 num_led = 0;
+	read_num_led(&num_led, __FLSH_NUMLED_ADDRESS__);
+	set_num_led(num_led);
 
 	set_dev_state(E_DEV_WORK);
 
@@ -37,6 +41,8 @@ int main(void)
 				calib_led();
 			reset_mode_button();
 			reset_power_button();
+			num_led = get_num_led();
+			falsh_write((u16*) &num_led, __FLSH_NUMLED_ADDRESS__);
 			break;
 
 		case E_DEV_SLEEP:

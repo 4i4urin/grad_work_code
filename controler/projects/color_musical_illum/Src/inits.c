@@ -38,6 +38,8 @@ void init_device(void)
 	init_ws2815();
 	ON_LED_POWER();
 	start_adc_meas();
+	FLASH->KEYR = 0x45670123;
+	FLASH->KEYR = 0xCDEF89AB;
 }
 
 

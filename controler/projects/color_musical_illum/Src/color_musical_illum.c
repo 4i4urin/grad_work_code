@@ -17,7 +17,7 @@
 
 static u8 meas_max_ampl(u8* pvolts, u16 number);
 
-u8 _num_led = 10;
+u8 _num_led = 20;
 
 
 u8 _meas_full_ready = 0;
