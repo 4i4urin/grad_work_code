@@ -13,7 +13,7 @@
 #include "fft.h"
 #include "ws2815.h"
 #include "led_mode.h"
-
+#include "goertzel.h"
 
 static u8 meas_max_ampl(u8* pvolts, u16 number);
 
@@ -30,51 +30,105 @@ u8* _pvolts = _volts;
 
 u8 _ilum_mode = 0;
 
-t_fft _fft = { 0 };
-u16* _pfft_abs = _fft.abs_res;
-t_complex* _pfft_res = _fft.cmpx_val;
+//t_fft _fft = { 0 };
+//u16* _pfft_abs = _fft.abs_res;
+//t_complex* _pfft_res = _fft.cmpx_val;
+
+
+//void coloor_music(void)
+//{
+//	u8 max_ampl = 0;
+//	if (_meas_half_ready)
+//	{
+//		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts);
+//		max_ampl = meas_max_ampl(_pvolts, MEAS_HALF_NUM);
+//		_meas_half_ready = 0;
+//	} else if (_meas_full_ready)
+//	{
+//		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts + MEAS_HALF_NUM);
+//		max_ampl = meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM);
+//		_meas_full_ready = 0;
+//	} else
+//		return;
+//
+//	sprintf(_tx_buf, "dpot = %d\tampl = %d\r\n",
+//			get_depot_res(), max_ampl);
+//	tx_str(_tx_buf);
+//
+//	*_pfft_abs = 0;
+//	OFF_CTRL_LED();
+//	switch (get_ilum_mode())
+//	{
+//	case 0: // sound
+//		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+//		{
+//			clear_led();
+//			break;
+//		}
+//		freq_led_mode(_pfft_abs, get_pctrl_panel());
+//		break;
+//
+//	case 1: // sound
+//		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
+//		{
+//			clear_led();
+//			break;
+//		}
+//		freq_led_linear_mode(_pfft_abs);
+//		break;
+//
+//	case 2:
+//		one_colore_full_led(get_pctrl_panel());
+//		break;
+//
+//
+//	default:
+//		clear_led();
+//		break;
+//	}
+//}
+
+
+static const u16 supp_freq[FREQ_NUM] = {
+		500 * (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color RED
+		800 * (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color GREEN
+		1000 * (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color BLUE
+		1200* (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color YELLOW
+		1500* (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color PURPLE
+		1700* (MEAS_HALF_NUM >> 1) / SAMPL_FRQ, // color BLUEx2
+		2000* (MEAS_HALF_NUM >> 1) / SAMPL_FRQ  // color WIGHT
+};
+u8 goer_res[FREQ_NUM] = { 0 };
 
 
 void coloor_music(void)
 {
-	u8 max_ampl = 0;
 	if (_meas_half_ready)
 	{
-		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts);
-		max_ampl = meas_max_ampl(_pvolts, MEAS_HALF_NUM);
+		goertzel_arr(
+				_pvolts, MEAS_HALF_NUM >> 1, supp_freq, FREQ_NUM, goer_res);
 		_meas_half_ready = 0;
 	} else if (_meas_full_ready)
 	{
-		_pfft_abs = make_fft_abs(_pfft_res, _pfft_abs, _pvolts + MEAS_HALF_NUM);
-		max_ampl = meas_max_ampl(_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM);
+		goertzel_arr(
+				_pvolts + MEAS_HALF_NUM, MEAS_HALF_NUM >> 1, supp_freq, FREQ_NUM, goer_res);
 		_meas_full_ready = 0;
 	} else
 		return;
 
-	sprintf(_tx_buf, "dpot = %d\tampl = %d\r\n",
-			get_depot_res(), max_ampl);
+	sprintf(_tx_buf, "dpot = %d\r\n",
+			get_depot_res());
 	tx_str(_tx_buf);
 
-	*_pfft_abs = 0;
 	OFF_CTRL_LED();
 	switch (get_ilum_mode())
 	{
 	case 0: // sound
-		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
-		{
-			clear_led();
-			break;
-		}
-		freq_led_mode(_pfft_abs, get_pctrl_panel());
+		one_colore_goertzel(goer_res);
 		break;
 
 	case 1: // sound
-		if (get_depot_res() == MAX_DPOT_RES && max_ampl < LOWER_AMPL_LIMIT)
-		{
-			clear_led();
-			break;
-		}
-		freq_led_linear_mode(_pfft_abs);
+		one_colore_full_led(get_pctrl_panel());
 		break;
 
 	case 2:
@@ -87,6 +141,8 @@ void coloor_music(void)
 		break;
 	}
 }
+
+
 
 
 void clear_led(void)

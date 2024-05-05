@@ -25,5 +25,6 @@ void one_colore_running(u8* pctrl);
 void one_colore_full_led(u8* pctrl);
 void freq_led_mode(u16* pfft_abs, u8* preg);
 void freq_led_linear_mode(u16* pfft_abs);
+void one_colore_goertzel(u8* goertzel_res);
 
 #endif /* LED_MODE_H_ */

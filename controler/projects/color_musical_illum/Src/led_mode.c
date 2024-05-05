@@ -23,6 +23,64 @@ void one_colore_full_led(u8* pctrl)
 }
 
 
+void one_colore_goertzel(u8* goertzel_res)
+{
+	u8 max_index = 0;
+	u8 max_val = 0;
+	u8 colors[4] = { 0 };
+	for (u8 i = 0;i < FREQ_NUM; i++)
+	{
+		if (goertzel_res[i] > max_val)
+		{
+			max_val = goertzel_res[i];
+			max_index = i;
+		}
+	}
+	if (max_val < 3)
+		max_index = 10;
+
+	switch (max_index)
+	{
+	case 0: // RED
+		colors[1]  = 8; colors[0]  = 0;
+		colors[I_BLUE] = 0; colors[I_BRIGHT] = 6;
+		break;
+	case 1: // GREEN
+		colors[1]  = 0; colors[0]  = 8;
+		colors[I_BLUE] = 0; colors[I_BRIGHT] = 6;
+		break;
+	case 2: // BLUE
+		colors[1]  = 0; colors[0]  = 0;
+		colors[I_BLUE] = 8; colors[I_BRIGHT] = 6;
+		break;
+	case 3: // YELLOW
+		colors[1]  = 8; colors[0]  = 8;
+		colors[I_BLUE] = 0; colors[I_BRIGHT] = 6;
+		break;
+	case 4: // PURPLE
+		colors[1]  = 8; colors[0]  = 0;
+		colors[I_BLUE] = 8; colors[I_BRIGHT] = 6;
+		break;
+	case 5: // BLUEx2
+		colors[1]  = 0; colors[0]  = 8;
+		colors[I_BLUE] = 8; colors[I_BRIGHT] = 6;
+		break;
+	case 6: // WIGHT
+		colors[1]  = 8; colors[0]  = 8;
+		colors[I_BLUE] = 8; colors[I_BRIGHT] = 6;
+		break;
+	default:
+		colors[1] = 0; colors[0] = 0;
+		colors[I_BLUE] = 0; colors[I_BRIGHT] = 0;
+		break;
+	}
+	for (register u16 i = 0; i < get_num_led(); i++)
+		ws2815_set_control(i, colors);
+
+	ws2815_send_dma();
+}
+
+
 void one_colore_running(u8* pctrl)
 {
 	u8 Rpixel = pctrl[I_RED];  u8 Gpixel = pctrl[I_GREEN];

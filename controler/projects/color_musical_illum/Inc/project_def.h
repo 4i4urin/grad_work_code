@@ -32,7 +32,7 @@
 #define MCU_FREQ		64000000 // 64 MHz
 
 
-#define USE_BRIGHT 0
+#define USE_BRIGHT 1
 #define NUM_ILUM_MODE 3
 
 
@@ -86,8 +86,8 @@
 						NVIC_EnableIRQ(USART3_IRQn);
 
 
-
-
+// GOERTZEL
+#define FREQ_NUM 7
 
 
 
